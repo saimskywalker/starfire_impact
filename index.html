@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>STARFIRE IMPACT</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+
+<body>
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            alert("Error: " + msg + "\nLine: " + line + "\nCol: " + col);
+        };
+    </script>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui-layer">
+            <div id="start-screen">
+                <div class="title-glow">
+                    <h1>STARFIRE IMPACT</h1>
+                    <h2>By SAIMSKYWALKER</h2>
+                </div>
+                <p>Enjoy the Adventures of Outer Space!</p>
+                <button id="start-button">START</button>
+                <p class="blink">PRESS SPACE OR TAP START</p>
+            </div>
+            <div id="hud" class="hidden">
+                <div class="hud-top">
+                    <div id="score">SCORE: 000000</div>
+                    <div id="level-progress-container">
+                        <div id="level-progress-label">BOSS APPROACHING</div>
+                        <div id="level-progress-bar">
+                            <div id="level-progress-fill"></div>
+                        </div>
+                    </div>
+                    <div id="level">LEVEL 1</div>
+                </div>
+                <div class="hud-bottom">
+                    <div id="health-bar">
+                        <div id="health-fill"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('SW registered', reg))
+                .catch(err => console.error('SW failed', err));
+        }
+    </script>
+</body>
+
+</html>
