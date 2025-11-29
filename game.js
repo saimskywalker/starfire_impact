@@ -61,11 +61,11 @@ const WEAPON_PATTERNS = [
 
 // --- Level Configuration ---
 const LEVEL_CONFIG = [
-    { duration: 60, spawnRate: 1.5, bgSpeed: 0.5, enemies: [11], boss: 'ScrapGuardian', name: "DEBRIS BELT" },
-    { duration: 60, spawnRate: 1.3, bgSpeed: 0.8, enemies: [11, 20], boss: 'RaiderCaptain', name: "ASTEROID FIELD" },
-    { duration: 60, spawnRate: 1.2, bgSpeed: 1.0, enemies: [11, 12], boss: 'IonWyrm', name: "ION NEBULA" },
-    { duration: 60, spawnRate: 1.1, bgSpeed: 1.2, enemies: [11, 12, 20], boss: 'DockOverseer', name: "ORBITAL DOCK" },
-    { duration: 60, spawnRate: 1.0, bgSpeed: 1.5, enemies: [12, 13], boss: 'MutagenCore', name: "BIO LABS" },
+    { duration: 60, spawnRate: 2.6, bgSpeed: 0.5, enemies: [11], boss: 'ScrapGuardian', name: "DEBRIS BELT", enemySpeedScale: 0.75, enemyFireScale: 1.25 },
+    { duration: 60, spawnRate: 2.4, bgSpeed: 0.8, enemies: [11, 20], boss: 'RaiderCaptain', name: "ASTEROID FIELD", enemySpeedScale: 0.8, enemyFireScale: 1.2 },
+    { duration: 60, spawnRate: 2.2, bgSpeed: 1.0, enemies: [11, 12], boss: 'IonWyrm', name: "ION NEBULA", enemySpeedScale: 0.85, enemyFireScale: 1.15 },
+    { duration: 60, spawnRate: 2.0, bgSpeed: 1.2, enemies: [11, 12, 20], boss: 'DockOverseer', name: "ORBITAL DOCK", enemySpeedScale: 0.9, enemyFireScale: 1.1 },
+    { duration: 60, spawnRate: 1.8, bgSpeed: 1.5, enemies: [12, 13], boss: 'MutagenCore', name: "BIO LABS", enemySpeedScale: 0.95, enemyFireScale: 1.05 },
     { duration: 60, spawnRate: 0.9, bgSpeed: 2.0, enemies: [12, 13, 14], boss: 'RingFortress', name: "DEFENSE GRID" },
     { duration: 60, spawnRate: 0.8, bgSpeed: 2.5, enemies: [13, 14], boss: 'WarMech', name: "FACTORY SECTOR" },
     { duration: 60, spawnRate: 0.7, bgSpeed: 3.0, enemies: [11, 12, 13, 14], boss: 'TunnelSerpent', name: "DEEP SPACE" },
@@ -253,12 +253,13 @@ class InputHandler {
         this.keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, Space: false };
         this.touch = { active: false, x: 0, y: 0, startX: 0, startY: 0 };
         this.pointer = { active: false, x: 0, y: 0, startX: 0, startY: 0 };
+        this.onStart = null;
 
         window.addEventListener('keydown', e => {
             if (e.code === 'Space') {
                 e.preventDefault();
                 this.keys.Space = true;
-                if (typeof game !== 'undefined' && game) game.start();
+                if (this.onStart) this.onStart();
             }
             if (this.keys.hasOwnProperty(e.code)) this.keys[e.code] = true;
         });
@@ -273,7 +274,7 @@ class InputHandler {
             this.touch.startX = t.clientX;
             this.touch.startY = t.clientY;
             this.touch.active = true;
-            if (typeof game !== 'undefined' && game) game.start(); // Touch can start the game
+            if (this.onStart) this.onStart(); // Touch can start the game
             this.keys.Space = true;
         }, { passive: false });
 
@@ -371,6 +372,10 @@ class Entity {
         // Visuals based on Type
         switch (this.type) {
             case 0: // Player
+                if (game?.sprites?.player) {
+                    ctx.drawImage(game.sprites.player, -32, -32);
+                    break;
+                }
                 ctx.fillStyle = '#00e8ff';
                 ctx.beginPath();
                 ctx.moveTo(20, 0);    // nose
@@ -393,6 +398,10 @@ class Entity {
                 ctx.beginPath(); ctx.moveTo(-22, 0); ctx.lineTo(-32, 6); ctx.lineTo(-32, -6); ctx.closePath(); ctx.fill();
                 break;
             case 5: // Player Bullet
+                if (game?.sprites?.playerBullet) {
+                    ctx.drawImage(game.sprites.playerBullet, -14, -14);
+                    break;
+                }
                 ctx.fillStyle = '#ffff00';
                 ctx.fillRect(-6, -3, 12, 6);
                 break;
@@ -401,18 +410,34 @@ class Entity {
                 ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
                 break;
             case 11: // Scout (Triangle)
+                if (game?.sprites?.scout) {
+                    ctx.drawImage(game.sprites.scout, -24, -24);
+                    break;
+                }
                 ctx.fillStyle = '#ff4400';
                 ctx.beginPath(); ctx.moveTo(-16, 0); ctx.lineTo(16, 10); ctx.lineTo(10, 0); ctx.lineTo(16, -10); ctx.closePath(); ctx.fill();
                 break;
             case 12: // Fighter (Winged)
+                if (game?.sprites?.fighter) {
+                    ctx.drawImage(game.sprites.fighter, -24, -24);
+                    break;
+                }
                 ctx.fillStyle = '#ff8800';
                 ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-10, 15); ctx.lineTo(-5, 0); ctx.lineTo(-10, -15); ctx.closePath(); ctx.fill();
                 break;
             case 13: // Interceptor (Needle)
+                if (game?.sprites?.interceptor) {
+                    ctx.drawImage(game.sprites.interceptor, -24, -24);
+                    break;
+                }
                 ctx.fillStyle = '#ff0044';
                 ctx.beginPath(); ctx.moveTo(20, 0); ctx.lineTo(-20, 5); ctx.lineTo(-20, -5); ctx.closePath(); ctx.fill();
                 break;
             case 14: // Tank (Blocky)
+                if (game?.sprites?.tank) {
+                    ctx.drawImage(game.sprites.tank, -28, -28);
+                    break;
+                }
                 ctx.fillStyle = '#aa4400';
                 ctx.fillRect(-20, -20, 40, 40);
                 break;
@@ -523,7 +548,7 @@ class Bullet extends Entity {
 }
 
 class Enemy extends Entity {
-    constructor(x, y, type) {
+    constructor(x, y, type, speedScale = 1, fireScale = 1) {
         super(x, y, 32, 32, type);
         this.hp = type === 14 ? 60 : (type === 13 ? 15 : 30);
         this.timer = 0;
@@ -532,6 +557,8 @@ class Enemy extends Entity {
         this.waveOffset = Math.random() * Math.PI * 2;
         this.speedJitter = 0.85 + Math.random() * 0.4;
         this.shootCooldown = 1.4 + Math.random() * 0.8;
+        this.levelSpeedScale = speedScale;
+        this.levelFireScale = fireScale;
     }
 
     update(dt) {
@@ -562,29 +589,29 @@ class Enemy extends Entity {
             yOffset += Math.sin((this.timer + this.waveOffset) * 2) * 1.5;
         }
 
-        this.x -= ENEMY_BASE_SPEED * speedFactor * this.speedJitter * dt;
+        this.x -= ENEMY_BASE_SPEED * speedFactor * this.speedJitter * this.levelSpeedScale * dt;
         this.y += yOffset;
 
         const straightShots = game.levelIndex < 5;
 
         // Shooting Logic
-        if (this.type === 11 && this.fireTimer > 2.2) {
+        if (this.type === 11 && this.fireTimer > 2.2 * this.levelFireScale) {
             this.fireTimer = 0;
             const vy = straightShots ? 0 : Math.max(-0.45, Math.min(0.45, (game.player.y - this.y) / 320));
             game.bullets.push(new Bullet(this.x - 20, this.y, -1.0, vy, 'enemy'));
             game.sound.playEnemyLaser();
-        } else if (this.type === 12 && this.fireTimer > this.shootCooldown) { // Fighter
+        } else if (this.type === 12 && this.fireTimer > this.shootCooldown * this.levelFireScale) { // Fighter
             this.fireTimer = 0;
             const aimY = straightShots ? 0 : (game.player.y - this.y) / 240;
             game.bullets.push(new Bullet(this.x - 20, this.y, -0.85, aimY + 0.15, 'enemy'));
             game.bullets.push(new Bullet(this.x - 20, this.y, -0.85, aimY - 0.15, 'enemy'));
             game.sound.playEnemyLaser();
-        } else if (this.type === 13 && this.fireTimer > 1.9) { // Interceptor support fire
+        } else if (this.type === 13 && this.fireTimer > 1.9 * this.levelFireScale) { // Interceptor support fire
             this.fireTimer = 0;
             const aimY = straightShots ? 0 : (game.player.y - this.y) / 260;
             game.bullets.push(new Bullet(this.x - 15, this.y, -1.1, aimY, 'enemy'));
             game.sound.playEnemyLaser();
-        } else if (this.type === 14 && this.fireTimer > (this.shootCooldown + 0.8)) { // Tank
+        } else if (this.type === 14 && this.fireTimer > (this.shootCooldown + 0.8) * this.levelFireScale) { // Tank
             this.fireTimer = 0;
             const aim = straightShots ? 0 : (game.player.y - this.y) / 300;
             game.bullets.push(new Bullet(this.x, this.y, -0.65, aim, 'enemy'));
@@ -674,7 +701,11 @@ class Boss extends Entity {
         ctx.fillStyle = '#c30030';
         ctx.strokeStyle = '#f8b4c4';
         ctx.lineWidth = 3;
-        if (this.name === 'ScrapGuardian') {
+        if (this.name === 'ScrapGuardian' && game?.sprites?.boss1) {
+            ctx.drawImage(game.sprites.boss1, -70, -70);
+        } else if (this.name === 'RaiderCaptain' && game?.sprites?.boss2) {
+            ctx.drawImage(game.sprites.boss2, -70, -70);
+        } else if (this.name === 'ScrapGuardian') {
             // Central eye with four writhing limbs
             ctx.beginPath();
             ctx.ellipse(0, 0, 55, 45, 0, 0, Math.PI * 2);
@@ -786,10 +817,6 @@ class Boss extends Entity {
             ctx.strokeStyle = '#ff99bb'; ctx.stroke();
         }
 
-        // HP Bar
-        ctx.fillStyle = '#000'; ctx.fillRect(-40, -60, 80, 5);
-        ctx.fillStyle = '#f00'; ctx.fillRect(-40, -60, 80 * (this.hp / this.maxHp), 5);
-
         ctx.restore();
     }
 
@@ -872,7 +899,7 @@ class Boss extends Entity {
     behaviorSpawn(dt) {
         if (this.timer > 3.0) {
             this.timer = 0;
-            game.enemies.push(new Enemy(this.x - 50, this.y, 11)); // Spawn minion
+            game.enemies.push(new Enemy(this.x - 50, this.y, 11, game.enemySpeedScale, game.enemyFireScale)); // Spawn minion
         }
     }
 
@@ -933,16 +960,18 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.width = this.canvas.width = window.innerWidth;
         this.height = this.canvas.height = window.innerHeight;
+        this.sprites = { player: null, playerBullet: null, scout: null, fighter: null, interceptor: null, tank: null, boss1: null, boss2: null };
 
         this.sound = new SoundManager();
         this.input = new InputHandler();
+        this.input.onStart = () => this.start();
         this.player = new Player(100, this.height / 2);
         this.bullets = [];
         this.enemies = [];
         this.items = [];
         this.stars = [];
         this.dropCounts = { weapon: 0, heal: 0 };
-        this.dropLimits = { weapon: 0, heal: 3 };
+        this.dropLimits = { weapon: 0, heal: 5 };
 
         // Init Stars
         for (let i = 0; i < 150; i++) {
@@ -954,14 +983,6 @@ class Game {
             });
         }
 
-        this.score = 0;
-        this.levelIndex = 0; // 0 to 9
-        this.levelTime = 0;
-        this.bossSpawned = false;
-        this.isRunning = false;
-        this.lastTime = 0;
-        this.spawnTimer = 0;
-
         this.ui = {
             start: document.getElementById('start-screen'),
             startBtn: document.getElementById('start-button'),
@@ -970,8 +991,22 @@ class Game {
             level: document.getElementById('level'),
             hp: document.getElementById('health-fill'),
             progress: document.getElementById('level-progress-fill'),
-            label: document.getElementById('level-progress-label')
+            label: document.getElementById('level-progress-label'),
+            bossBar: document.getElementById('boss-bar'),
+            bossFill: document.getElementById('boss-bar-fill'),
+            bossLabel: document.getElementById('boss-label')
         };
+
+        this.score = 0;
+        this.levelIndex = 0; // 0 to 9
+        this.levelTime = 0;
+        this.bossSpawned = false;
+        this.isRunning = false;
+        this.lastTime = 0;
+        this.spawnTimer = 0;
+        this.enemySpeedScale = 1;
+        this.enemyFireScale = 1;
+        if (this.ui.bossBar) this.ui.bossBar.classList.add('hidden');
 
         // Start button handlers (touch/click)
         this.ui.startBtn.addEventListener('click', e => {
@@ -990,7 +1025,159 @@ class Game {
             this.height = this.canvas.height = window.innerHeight;
         });
 
+        this.loadPlayerSprite();
+        this.loadPlayerBulletSprite();
+        this.loadScoutSprite();
+        this.loadFighterSprite();
+        this.loadInterceptorSprite();
+        this.loadTankSprite();
+        this.loadBoss1Sprite();
+        this.loadBoss2Sprite();
         requestAnimationFrame(t => this.loop(t));
+    }
+
+    loadPlayerSprite() {
+        const img = new Image();
+        img.src = 'assets/player sprite first.png';
+        img.onload = () => {
+            const size = 64;
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.player = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load player sprite', e);
+    }
+
+    loadPlayerBulletSprite() {
+        const img = new Image();
+        img.src = 'assets/player bullet.png';
+        img.onload = () => {
+            const size = 28; // bullet hitbox 10, make visual noticeably larger
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.playerBullet = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load player bullet sprite', e);
+    }
+
+    loadScoutSprite() {
+        const img = new Image();
+        img.src = 'assets/scout.png';
+        img.onload = () => {
+            const size = 48; // Scout hitbox 32, allow slight bleed
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.scout = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load scout sprite', e);
+    }
+
+    loadFighterSprite() {
+        const img = new Image();
+        img.src = 'assets/fighter.png';
+        img.onload = () => {
+            const size = 48; // Fighter hitbox 32, allow slight bleed
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.fighter = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load fighter sprite', e);
+    }
+
+    loadInterceptorSprite() {
+        const img = new Image();
+        img.src = 'assets/interceptor sprites.png';
+        img.onload = () => {
+            const size = 48; // Interceptor hitbox 32, allow slight bleed
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.interceptor = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load interceptor sprite', e);
+    }
+
+    loadTankSprite() {
+        const img = new Image();
+        img.src = 'assets/tank.png';
+        img.onload = () => {
+            const size = 56; // Tank hitbox 32, allow bulkier look
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.tank = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load tank sprite', e);
+    }
+
+    loadBoss1Sprite() {
+        const img = new Image();
+        img.src = 'assets/boss 1.png';
+        img.onload = () => {
+            const size = 140; // Boss hitbox 100, allow larger silhouette
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.boss1 = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load boss sprite', e);
+    }
+
+    loadBoss2Sprite() {
+        const img = new Image();
+        img.src = 'assets/boss 2.png';
+        img.onload = () => {
+            const size = 140; // Boss hitbox 100, allow larger silhouette
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.boss2 = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load boss sprite', e);
     }
 
     start() {
@@ -1023,9 +1210,12 @@ class Game {
         this.player.lastShoot = 0;
         this.spawnTimer = 0;
         const config = LEVEL_CONFIG[this.levelIndex];
+        this.enemySpeedScale = config.enemySpeedScale || 1;
+        this.enemyFireScale = config.enemyFireScale || 1;
         this.ui.level.innerText = config.name + " (LVL " + (this.levelIndex + 1) + ")";
         this.ui.label.innerText = "BOSS APPROACHING";
         this.ui.label.style.color = "#ff0";
+        if (this.ui.bossBar) this.ui.bossBar.classList.add('hidden');
         // Reset drop counters and limits per level
         this.dropCounts = { weapon: 0, heal: 0 };
         const levelNum = this.levelIndex + 1;
@@ -1073,6 +1263,7 @@ class Game {
             this.ui.label.style.color = "#f00";
             this.sound.playBossWarning();
             this.sound.playMusic('boss');
+            if (this.ui.bossBar) this.ui.bossBar.classList.remove('hidden');
         }
 
         // Spawner
@@ -1088,7 +1279,7 @@ class Game {
                 if (type === 20) {
                     this.enemies.push(new Asteroid(this.width + 50, y));
                 } else {
-                    this.enemies.push(new Enemy(this.width + 50, y, type));
+                    this.enemies.push(new Enemy(this.width + 50, y, type, this.enemySpeedScale, this.enemyFireScale));
                 }
             }
         }
@@ -1114,6 +1305,18 @@ class Game {
         // HUD
         this.ui.score.innerText = 'SCORE: ' + this.score.toString().padStart(6, '0');
         this.ui.hp.style.width = Math.max(0, (this.player.hp / this.player.maxHp) * 100) + '%';
+        const boss = this.enemies.find(e => e.type === 99);
+        if (boss && this.ui.bossBar) {
+            this.ui.bossBar.classList.remove('hidden');
+            if (this.ui.bossFill) {
+                this.ui.bossFill.style.width = Math.max(0, (boss.hp / boss.maxHp) * 100) + '%';
+            }
+            if (this.ui.bossLabel) {
+                this.ui.bossLabel.innerText = boss.name + ' HP';
+            }
+        } else if (this.ui.bossBar) {
+            this.ui.bossBar.classList.add('hidden');
+        }
     }
 
     draw() {
@@ -1205,7 +1408,7 @@ class Game {
                     this.player.upgradeWeapon();
                     this.sound.playPowerup();
                 } else if (it.kind === 'heal') {
-                    this.player.hp = Math.min(this.player.maxHp, this.player.hp + 30);
+                    this.player.hp = Math.min(this.player.maxHp, this.player.hp + 40);
                     this.sound.playPowerup();
                 }
             }
