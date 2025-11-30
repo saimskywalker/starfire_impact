@@ -1,88 +1,83 @@
-# <div align="center" style="font-size:42px;font-weight:800;letter-spacing:1px;">STARFIRE IMPACT: REBORN</div>
-<div align="center">
-  <p style="font-weight:600;margin:6px 0 14px;background:linear-gradient(120deg,#ff8a00,#ff3d81,#5f5fff);-webkit-background-clip:text;color:transparent;">
-    High-speed, retro-inspired space shooter for the modern web
-  </p>
-  <img src="assets/icon-192.png" alt="Starfire Impact Logo" width="96" height="96" />
-  <br />
-  <a href="#"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
-  <a href="#"><img alt="Status" src="https://img.shields.io/badge/status-playable-brightgreen.svg"></a>
-  <a href="#"><img alt="Platform" src="https://img.shields.io/badge/platform-web%20(PWA)-ff6b6b.svg"></a>
-  <a href="#"><img alt="Tech" src="https://img.shields.io/badge/made%20with-JavaScript%20%7C%20Canvas-5f5fff.svg"></a>
-</div>
+# STARFIRE IMPACT: REBORN
+
+![Starfire Impact Icon](assets/player%20sprite%20first.png)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](#)
+[![Status: Playable](https://img.shields.io/badge/status-playable-brightgreen.svg)](#)
+[![Platform: Web PWA](https://img.shields.io/badge/platform-web%20(PWA)-ff6b6b.svg)](#)
+[![Tech: JS + Canvas](https://img.shields.io/badge/made%20with-JavaScript%20%7C%20Canvas-5f5fff.svg)](#)
+
+Retro space shooter vibes, fresh coat of paint. Small enough to run in a tab, loud enough to make you grin. Built as a web PWA so you can play on desktop or your phone when you should probably be doing something else.
 
 ---
 
-**STARFIRE IMPACT: REBORN** is a modern take on the classic 2D space shooter. Glide through hand-tuned levels, clear dynamic enemy waves, and survive boss encounters that push reflexes and positioning to the limit—all in a tiny, dependency-free web build that runs anywhere a browser does.
+## What This Is
 
-## 🚀 At a Glance
+- A browser-first 2D shooter with 10 hand-made stages and boss fights that get mean.
+- No big frameworks; just ES6, Canvas, and a simple game loop I can understand at 2 a.m.
+- Works offline thanks to a service worker and `manifest.webmanifest`.
+- Graphics are tiny and friendly on bandwidth; feels like a nice throwback.
 
-- 10 handcrafted stages that ramp difficulty and variety.
-- Distinct enemy archetypes (scouts, fighters, interceptors, heavy armor) with unique patterns.
-- Set-piece boss fights with readable telegraphs and scaling aggression.
-- Responsive controls for both keyboard and touch, tuned for 60FPS Canvas rendering.
-- Built as a Progressive Web App: offline-ready with a service worker and manifest.
+## How to Play
 
-## 🕹️ Controls
+- Desktop: Arrow keys to move, spacebar to fire.
+- Mobile: Drag to move. Auto-fire kicks in once you touch the screen (tap if you want to mash).
 
-**Desktop**
-- `Arrow Keys` — move
-- `Spacebar` — fire
+## Quick Install (Local)
 
-**Mobile**
-- Touch & drag — move
-- Auto-fire enabled on interaction (tap to shoot)
-
-## 🧭 Level Guide
-
-| Level | Name | Boss | Threat |
-| :---: | :---------------- | :--------------- | :------------- |
-| 1 | Debris Belt | ScrapGuardian | 🟢 Low |
-| 2 | Asteroid Field | RaiderCaptain | 🟢 Low |
-| 3 | Ion Nebula | IonWyrm | 🟡 Medium |
-| 4 | Orbital Dock | DockOverseer | 🟡 Medium |
-| 5 | Bio Labs | MutagenCore | 🟡 Medium |
-| 6 | Defense Grid | RingFortress | 🔴 High |
-| 7 | Factory Sector | WarMech | 🔴 High |
-| 8 | Deep Space | TunnelSerpent | 🔴 High |
-| 9 | The Citadel | CitadelAegis | ⚫ Extreme |
-| 10 | Core System | CoreOvermind | ☠️ Nightmare |
-
-## 🧰 Tech Stack
-
-- **Engine:** Custom lightweight ECS-inspired loop written in ES6+ (no frameworks).
-- **Rendering:** HTML5 Canvas for low-latency draws and particle flashes.
-- **Audio:** Web Audio API for synthesized SFX (no external packs).
-- **PWA:** `manifest.webmanifest` + `service-worker.js` for offline play and install prompts.
-
-## ⚡ Run Locally
-
-1) Clone the repo  
 ```bash
-git clone <your-fork-or-remote-url> spaceimpact
-cd spaceimpact
-```
-2) Serve the files (any static server works)  
-```bash
+git clone <your-remote> starfire-impact
+cd starfire-impact
 python3 -m http.server 8000
 # or: npx serve
 ```
-3) Play  
-Open `http://localhost:8000` in your browser. Install as a PWA if prompted for offline play.
 
-## 🧠 Dev Notes
+Then open `http://localhost:8000` in a browser. PWA prompts should appear if your browser likes you today.
 
-- Ships, bullets, and enemies live in a tiny entity pool to keep GC low.
-- Rendering is tuned for 60FPS; keep sprites at `assets/sprites.png` if you add art.
-- Service worker is basic on purpose: update cache keys when you ship new assets.
+## Level Cheat Sheet
 
-## 🗺️ Roadmap Ideas
+| Level | Area | Boss | Mood |
+| :---: | :---------------- | :--------------- | :------------- |
+| 1 | Debris Belt | ScrapGuardian | gentle |
+| 2 | Asteroid Field | RaiderCaptain | gentle |
+| 3 | Ion Nebula | IonWyrm | warming up |
+| 4 | Orbital Dock | DockOverseer | warming up |
+| 5 | Bio Labs | MutagenCore | warming up |
+| 6 | Defense Grid | RingFortress | spicy |
+| 7 | Factory Sector | [REDACTED] | classified |
+| 8 | Deep Space | [REDACTED] | classified |
+| 9 | The Citadel | [REDACTED] | classified |
+| 10 | Apex Void | [REDACTED] | top secret |
 
-- Difficulty presets (Chill / Arcade / Nightmare).
-- Leaderboard-ready score serialization.
-- Touch-friendly accessibility options (left/right anchors).
+## Boss Briefings
 
-## 🙌 Credits
+- **ScrapGuardian (Lv1)**: Single core eye with mild spread shots; slow zig-zag.
+- **RaiderCaptain (Lv2)**: Manta dash volleys; follow-up salvos punish greedy chases.
+- **IonWyrm (Lv3)**: Wide sine hover; triple aimed bursts that tighten as you linger.
+- **DockOverseer (Lv4)**: Turret drift; paired vertical shots that box you in.
+- **MutagenCore (Lv5)**: Spawns escorts frequently; steady bob with periodic rush swarms.
+- **RingFortress (Lv6)**: Rotating radial rings plus aimed tri-shots; keep moving around the wheel.
+- **Lv7-10**: Classified dossiers. Expect unexpected patterns, layered phases, and harsher audio cues.
 
-Created by **SAIMSKYWALKER**. Inspired by the legendary *Space Impact* on the Nokia 3310.  
-MIT License. Enjoy the flight!
+## Tech Bits
+
+- Canvas rendering tuned for 60fps on decent phones and laptops.
+- Web Audio API makes the pew-pew noises (no sound packs).
+- Entity pool keeps garbage collection calm so the frame time stays smooth.
+- Assets live in `assets/`; sprites are in `assets/sprites.png` if you want to add your own art.
+
+## Dev Tips
+
+- If you change assets, bump the cache key in `service-worker.js` so players get updates.
+- Keep inputs simple; this is meant to be pick-up-and-blast, not study-the-manual.
+- I try to keep the code readable over fancy patterns; PRs that keep that vibe are welcome.
+
+## Roadmap (Loose)
+
+- Difficulty presets: Chill / Arcade / Nightmare.
+- Score saving that can plug into a leaderboard later.
+- Better touch affordances (bigger anchors, optional haptics).
+
+## Credits
+
+Made by **SAIMSKYWALKER**, inspired by Space Impact on the Nokia 3310. MIT licensed. If you have feedback, open an issue and I'll do my best to keep up.

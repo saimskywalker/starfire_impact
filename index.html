@@ -7,7 +7,7 @@
     <title>STARFIRE IMPACT</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.webmanifest">
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/player sprite first.png">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,13 +16,28 @@
 <body>
     <script>
         window.onerror = function (msg, url, line, col, error) {
-            alert("Error: " + msg + "\nLine: " + line + "\nCol: " + col);
+            if (window.game && typeof window.game.showMessage === 'function') {
+                window.game.showMessage({
+                    title: 'SYSTEM FAILURE',
+                    body: "Error: " + msg + "\nLine: " + line + "\nCol: " + col,
+                    primaryText: 'RELOAD',
+                    tone: 'alert',
+                    onPrimary: () => location.reload()
+                });
+            } else {
+                console.error("Error: " + msg + "\nLine: " + line + "\nCol: " + col);
+            }
         };
     </script>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
         <div id="ui-layer">
             <div id="start-screen">
+                <div class="start-orbs">
+                    <span class="cosmic-orb orb-a"></span>
+                    <span class="cosmic-orb orb-b"></span>
+                    <span class="cosmic-orb orb-c"></span>
+                </div>
                 <div class="title-glow">
                     <h1>STARFIRE-IMPACT</h1>
                     <h2>By SAIMSKYWALKER</h2>
@@ -35,7 +50,7 @@
                 </div>
                 <button id="start-button">START</button>                
                 <p class="blink hint">PRESS SPACE OR TAP START</p>
-                <div id="version-tag" class="version-tag">v1.1.11</div>
+                <div id="version-tag" class="version-tag">v1.1.65</div>
             </div>
             <div id="hud" class="hidden">
                 <div class="hud-top">
@@ -52,11 +67,35 @@
                     <div id="health-bar">
                         <div id="health-fill"></div>
                     </div>
-                    <div id="boss-bar" class="hidden">
-                        <div id="boss-label">BOSS HP</div>
-                        <div id="boss-bar-track">
-                            <div id="boss-bar-fill"></div>
+                    <div class="boss-bars">
+                        <div id="boss-bar" class="hidden boss-bar">
+                            <div id="boss-label">BOSS HP</div>
+                            <div id="boss-bar-track">
+                                <div id="boss-bar-fill"></div>
+                            </div>
+                            <div id="boss-shield-track" class="hidden">
+                                <div id="boss-shield-fill"></div>
+                            </div>
                         </div>
+                        <div id="boss-bar-2" class="hidden boss-bar">
+                            <div id="boss-label-2">BOSS 2 HP</div>
+                            <div id="boss-bar-track-2">
+                                <div id="boss-bar-fill-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="message-overlay" class="hidden" data-tone="info">
+                <div class="message-frame">
+                    <div class="message-header">
+                        <span class="message-kicker">STARFIRE FEED</span>
+                    </div>
+                    <div class="message-title" id="message-title">SYSTEM MESSAGE</div>
+                    <div class="message-body" id="message-body">--</div>
+                    <div class="message-actions">
+                        <button id="message-primary">CONFIRM</button>
+                        <button id="message-secondary" class="ghost hidden">CANCEL</button>
                     </div>
                 </div>
             </div>

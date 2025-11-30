@@ -1,4 +1,4 @@
-const CACHE_NAME = 'starfire-v37';
+const CACHE_NAME = 'starfire-v57';
 const ASSETS = [
     './',
     './index.html',
@@ -18,6 +18,9 @@ const ASSETS = [
     './assets/boss 5.png',
     './assets/boss 6.png',
     './assets/boss level 7.png',
+    './assets/boss_8_sprite-removebg-preview.png',
+    './assets/boss_9_sprite-removebg-preview.png',
+    './assets/final boss level 10.png',
     './assets/enemy shoot.png',
     './assets/upgrade weapon.png',
     './assets/heal.png',

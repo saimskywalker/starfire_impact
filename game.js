@@ -63,14 +63,14 @@ const WEAPON_PATTERNS = [
 const LEVEL_CONFIG = [
     { duration: 60, spawnRate: 2.6, bgSpeed: 0.5, enemies: [11], boss: 'ScrapGuardian', name: "DEBRIS BELT", enemySpeedScale: 0.75, enemyFireScale: 1.25 },
     { duration: 60, spawnRate: 1.8, bgSpeed: 0.8, enemies: [11, 20, 20], boss: 'RaiderCaptain', name: "ASTEROID FIELD", enemySpeedScale: 0.8, enemyFireScale: 1.2 },
-    { duration: 60, spawnRate: 2.2, bgSpeed: 1.0, enemies: [11, 12], boss: 'IonWyrm', name: "ION NEBULA", enemySpeedScale: 0.85, enemyFireScale: 1.15 },
+    { duration: 60, spawnRate: 1.2, bgSpeed: 1.2, enemies: [11, 12], boss: 'IonWyrm', name: "ION NEBULA", enemySpeedScale: 1.05, enemyFireScale: 0.9, enemyAimAggression: 1.1 },
     { duration: 60, spawnRate: 1.5, bgSpeed: 1.2, enemies: [11, 12, 20, 20], boss: 'DockOverseer', name: "ORBITAL DOCK", enemySpeedScale: 0.9, enemyFireScale: 1.1 },
     { duration: 60, spawnRate: 1.8, bgSpeed: 1.5, enemies: [12, 13], boss: 'MutagenCore', name: "BIO LABS", enemySpeedScale: 0.95, enemyFireScale: 1.05 },
-    { duration: 60, spawnRate: 0.7, bgSpeed: 2.0, enemies: [12, 13, 14, 20, 20], boss: 'RingFortress', name: "DEFENSE GRID" },
-    { duration: 60, spawnRate: 0.8, bgSpeed: 2.5, enemies: [13, 14], boss: 'WarMech', name: "FACTORY SECTOR" },
-    { duration: 60, spawnRate: 0.55, bgSpeed: 3.0, enemies: [11, 12, 13, 14, 20, 20], boss: 'TunnelSerpent', name: "DEEP SPACE" },
-    { duration: 60, spawnRate: 0.45, bgSpeed: 4.0, enemies: [13, 14, 20, 20], boss: 'CitadelAegis', name: "THE CITADEL" },
-    { duration: 60, spawnRate: 0.5, bgSpeed: 5.0, enemies: [11, 12, 13, 14, 20], boss: 'CoreOvermind', name: "CORE SYSTEM" }
+    { duration: 60, spawnRate: 0.6, bgSpeed: 2.0, enemies: [12, 13, 14, 20, 20], boss: 'RingFortress', name: "DEFENSE GRID", enemySpeedScale: 1.1, enemyFireScale: 0.9, enemyAimAggression: 1.1 },
+    { duration: 60, spawnRate: 0.65, bgSpeed: 2.5, enemies: [13, 14], boss: 'WarMech', name: "FACTORY SECTOR", enemySpeedScale: 1.15, enemyFireScale: 0.85, enemyAimAggression: 1.25 },
+    { duration: 60, spawnRate: 0.45, bgSpeed: 3.0, enemies: [11, 12, 13, 14, 20, 20], boss: ['AbyssAlpha', 'AbyssBeta'], twinBoss: true, name: "DEEP SPACE", enemySpeedScale: 1.22, enemyFireScale: 0.82, enemyAimAggression: 1.35 },
+    { duration: 60, spawnRate: 0.35, bgSpeed: 4.0, enemies: [11, 12, 13, 14, 20], boss: 'EclipsePillar', name: "THE CITADEL", enemySpeedScale: 1.35, enemyFireScale: 0.75, enemyAimAggression: 1.45 },
+    { duration: 70, spawnRate: 0.3, bgSpeed: 5.5, enemies: [11, 12, 13, 14, 20], boss: 'OblivionMonolith', name: "CORE SYSTEM", enemySpeedScale: 1.5, enemyFireScale: 0.7, enemyAimAggression: 1.6 }
 ];
 
 // Backdrops per level for galaxy vistas (planets omitted for stability)
@@ -190,13 +190,26 @@ class SoundManager {
         this.createVoice({ startFreq: 440, endFreq: 240, type: 'square', duration: 0.45, volume: 0.1, filterFreq: 1200, delay: 0.3 });
     }
 
-    playMusic(type = 'level') {
+    playMusic(type = 'level', variant = null) {
         if (!this.ensureCtx()) return;
         this.stopMusic();
 
         try {
             const now = this.ctx.currentTime;
-            const base = type === 'boss' ? 95 : 65;
+            const profiles = {
+                level: { base: 65, type1: 'triangle', type2: 'square', filter: 1000, gain: 0.03, lfoFreq: 0.7, lfoDepth: 12 },
+                boss: { base: 95, type1: 'sawtooth', type2: 'square', filter: 1600, gain: 0.045, lfoFreq: 2, lfoDepth: 35 },
+                MutagenCore: { base: 102, type1: 'sawtooth', type2: 'triangle', filter: 1500, gain: 0.05, lfoFreq: 2.4, lfoDepth: 26 },
+                RingFortress: { base: 108, type1: 'square', type2: 'sawtooth', filter: 1700, gain: 0.052, lfoFreq: 2.1, lfoDepth: 30 },
+                WarMech: { base: 118, type1: 'sawtooth', type2: 'sawtooth', filter: 1850, gain: 0.055, lfoFreq: 2.6, lfoDepth: 36 },
+                TunnelSerpent: { base: 110, type1: 'triangle', type2: 'sawtooth', filter: 1750, gain: 0.05, lfoFreq: 1.8, lfoDepth: 28 },
+                AbyssAlpha: { base: 125, type1: 'sawtooth', type2: 'square', filter: 1950, gain: 0.058, lfoFreq: 2.9, lfoDepth: 42 },
+                AbyssBeta: { base: 128, type1: 'square', type2: 'triangle', filter: 1900, gain: 0.056, lfoFreq: 3.1, lfoDepth: 38 },
+                EclipsePillar: { base: 132, type1: 'sawtooth', type2: 'sawtooth', filter: 2000, gain: 0.06, lfoFreq: 3.2, lfoDepth: 44 },
+                OblivionMonolith: { base: 140, type1: 'square', type2: 'sawtooth', filter: 2100, gain: 0.065, lfoFreq: 3.5, lfoDepth: 50 }
+            };
+            const profile = profiles[variant] || profiles[type === 'boss' ? 'boss' : 'level'];
+            const base = profile.base;
             const osc1 = this.ctx.createOscillator();
             const osc2 = this.ctx.createOscillator();
             const filter = this.ctx.createBiquadFilter();
@@ -204,19 +217,19 @@ class SoundManager {
             const lfo = this.ctx.createOscillator();
             const lfoGain = this.ctx.createGain();
 
-            osc1.type = type === 'boss' ? 'sawtooth' : 'triangle';
-            osc2.type = 'square';
+            osc1.type = profile.type1;
+            osc2.type = profile.type2;
             osc1.frequency.setValueAtTime(base, now);
-            osc2.frequency.setValueAtTime(base * (type === 'boss' ? 1.6 : 1.3), now);
+            osc2.frequency.setValueAtTime(base * 1.6, now);
 
             filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(type === 'boss' ? 1600 : 1000, now);
+            filter.frequency.setValueAtTime(profile.filter, now);
             filter.Q.setValueAtTime(0.8, now);
 
-            gain.gain.setValueAtTime(type === 'boss' ? 0.045 : 0.03, now);
+            gain.gain.setValueAtTime(profile.gain, now);
 
-            lfo.frequency.setValueAtTime(type === 'boss' ? 2 : 0.7, now);
-            lfoGain.gain.setValueAtTime(type === 'boss' ? 35 : 12, now);
+            lfo.frequency.setValueAtTime(profile.lfoFreq, now);
+            lfoGain.gain.setValueAtTime(profile.lfoDepth, now);
             lfo.connect(lfoGain);
             lfoGain.connect(filter.frequency);
 
@@ -641,27 +654,32 @@ class Enemy extends Entity {
         this.y += yOffset;
 
         const straightShots = game.levelIndex < 5;
+        const aimAgg = game.enemyAimAggression || 1;
 
         // Shooting Logic
         if (this.type === 11 && this.fireTimer > 2.2 * this.levelFireScale) {
             this.fireTimer = 0;
-            const vy = straightShots ? 0 : Math.max(-0.45, Math.min(0.45, (game.player.y - this.y) / 320));
+            const vyRaw = straightShots ? 0 : (game.player.y - this.y) / (320 / aimAgg);
+            const vy = Math.max(-0.55, Math.min(0.55, vyRaw));
             game.bullets.push(new Bullet(this.x - 20, this.y, -1.0, vy, 'enemy'));
             game.sound.playEnemyLaser();
         } else if (this.type === 12 && this.fireTimer > this.shootCooldown * this.levelFireScale) { // Fighter
             this.fireTimer = 0;
-            const aimY = straightShots ? 0 : (game.player.y - this.y) / 240;
+            const aimYRaw = straightShots ? 0 : (game.player.y - this.y) / (240 / aimAgg);
+            const aimY = Math.max(-0.6, Math.min(0.6, aimYRaw));
             game.bullets.push(new Bullet(this.x - 20, this.y, -0.85, aimY + 0.15, 'enemy'));
             game.bullets.push(new Bullet(this.x - 20, this.y, -0.85, aimY - 0.15, 'enemy'));
             game.sound.playEnemyLaser();
         } else if (this.type === 13 && this.fireTimer > 1.9 * this.levelFireScale) { // Interceptor support fire
             this.fireTimer = 0;
-            const aimY = straightShots ? 0 : (game.player.y - this.y) / 260;
+            const aimYRaw = straightShots ? 0 : (game.player.y - this.y) / (260 / aimAgg);
+            const aimY = Math.max(-0.65, Math.min(0.65, aimYRaw));
             game.bullets.push(new Bullet(this.x - 15, this.y, -1.1, aimY, 'enemy'));
             game.sound.playEnemyLaser();
         } else if (this.type === 14 && this.fireTimer > (this.shootCooldown + 0.8) * this.levelFireScale) { // Tank
             this.fireTimer = 0;
-            const aim = straightShots ? 0 : (game.player.y - this.y) / 300;
+            const aimRaw = straightShots ? 0 : (game.player.y - this.y) / (300 / aimAgg);
+            const aim = Math.max(-0.6, Math.min(0.6, aimRaw));
             game.bullets.push(new Bullet(this.x, this.y, -0.65, aim, 'enemy'));
             game.bullets.push(new Bullet(this.x, this.y, -0.65, aim + 0.22, 'enemy'));
             game.bullets.push(new Bullet(this.x, this.y, -0.65, aim - 0.22, 'enemy'));
@@ -756,6 +774,11 @@ class Boss extends Entity {
         this.spin = 0;       // used for rotating volleys
         this.hellTimer = 0;
         this.swarmIndex = 0; // used by spawner bosses
+        this.entryInvuln = true;
+        this.entryShieldTimer = 1.2; // grace after arrival to avoid opener cheese
+        this.shieldCycle = 0;
+        this.shieldActiveTimer = 0;
+        this.spawnTime = performance.now() / 1000;
     }
 
     draw(ctx) {
@@ -767,7 +790,37 @@ class Boss extends Entity {
         ctx.fillStyle = '#c30030';
         ctx.strokeStyle = '#f8b4c4';
         ctx.lineWidth = 3;
-        if (this.name === 'ScrapGuardian' && game?.sprites?.boss1) {
+        if (this.name === 'OblivionMonolith' && game?.sprites?.boss10) {
+            const t = Date.now() / 1000;
+            const throb = 0.06 + Math.sin(t * 2.0) * 0.04;
+            ctx.save();
+            ctx.scale(1 + throb, 1 + throb);
+            ctx.rotate(Math.sin(t * 1.1) * 0.05);
+            ctx.drawImage(game.sprites.boss10, -90, -90);
+            ctx.restore();
+        } else if (this.name === 'EclipsePillar' && game?.sprites?.boss9) {
+            const t = Date.now() / 1000;
+            const sway = Math.sin(t * 1.3) * 0.05;
+            ctx.save();
+            ctx.rotate(sway);
+            ctx.drawImage(game.sprites.boss9, -85, -85);
+            ctx.restore();
+        } else if ((this.name === 'AbyssAlpha' || this.name === 'AbyssBeta') && game?.sprites?.boss8) {
+            const t = Date.now() / 1000;
+            const pulse = 0.04 + Math.sin(t * 1.6) * 0.03;
+            const tilt = Math.sin(t * 0.8 + (this.twinId || 0)) * 0.08;
+            ctx.save();
+            ctx.rotate(tilt);
+            ctx.scale(1 + pulse, 1 + pulse);
+            ctx.drawImage(game.sprites.boss8, -80, -80);
+            if (this.name === 'AbyssBeta') {
+                ctx.globalCompositeOperation = 'screen';
+                ctx.fillStyle = 'rgba(120, 200, 255, 0.35)';
+                ctx.beginPath(); ctx.arc(0, 0, 70, 0, Math.PI * 2); ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            }
+            ctx.restore();
+        } else if (this.name === 'ScrapGuardian' && game?.sprites?.boss1) {
             const t = Date.now() / 1000;
             const wobble = Math.sin(t * 2.1) * 4;
             const scale = 1 + Math.sin(t * 1.3) * 0.03;
@@ -918,12 +971,13 @@ class Boss extends Entity {
         }
 
         // Shield visual indicator
-        if (this.shieldHp > 0) {
+        if (this.shieldHp > 0 || this.entryInvuln) {
             const radius = 90 + Math.sin(Date.now() * 0.01) * 4;
             const grad = ctx.createRadialGradient(0, 0, radius * 0.65, 0, 0, radius);
-            grad.addColorStop(0, 'rgba(120, 210, 255, 0.35)');
-            grad.addColorStop(1, 'rgba(120, 210, 255, 0.05)');
-            ctx.strokeStyle = 'rgba(120, 210, 255, 0.5)';
+            const baseAlpha = this.entryInvuln ? 0.55 : 0.35;
+            grad.addColorStop(0, `rgba(120, 210, 255, ${baseAlpha})`);
+            grad.addColorStop(1, `rgba(120, 210, 255, ${baseAlpha * 0.2})`);
+            ctx.strokeStyle = 'rgba(120, 210, 255, 0.6)';
             ctx.fillStyle = grad;
             ctx.lineWidth = 3;
             ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -939,9 +993,13 @@ class Boss extends Entity {
 
         // Entrance
         if (this.x > game.width - 150) {
-            const entrySpeed = this.name === 'ScrapGuardian' ? 160 : 50;
+            const entrySpeed = this.name === 'ScrapGuardian' ? 200 : 90;
             this.x -= entrySpeed * dt;
             return;
+        }
+        if (this.entryInvuln) {
+            this.entryShieldTimer -= dt;
+            if (this.entryShieldTimer <= 0) this.entryInvuln = false;
         }
 
         // Behavior Switch
@@ -956,6 +1014,10 @@ class Boss extends Entity {
             case 'TunnelSerpent': this.behaviorSnake(dt); break;
             case 'CitadelAegis': this.behaviorShield(dt); break;
             case 'CoreOvermind': this.behaviorBulletHell(dt); break;
+            case 'EclipsePillar': this.behaviorEclipse(dt); break;
+            case 'OblivionMonolith': this.behaviorOblivion(dt); break;
+            case 'AbyssAlpha': this.behaviorTwinAbyss(dt, 0); break;
+            case 'AbyssBeta': this.behaviorTwinAbyss(dt, Math.PI / 2); break;
             default: this.behaviorBasic(dt);
         }
     }
@@ -964,12 +1026,12 @@ class Boss extends Entity {
     applyBoss6Strafe() {
         if (this.name !== 'CitadelAegis' && this.name !== 'CoreOvermind') return;
         const anchorX = game.width - 150;
-        const swing = game.width * 0.35;
-        this.x = anchorX - Math.sin(this.spin * 0.6) * swing;
+        const swing = game.width * 0.45;
+        this.x = anchorX - Math.sin(this.spin * 0.9) * swing;
     }
 
     behaviorBasic(dt) {
-        this.y += 80 * this.dirY * dt;
+        this.y += 120 * this.dirY * dt;
         if (this.y > game.height - 80) this.dirY = -1;
         if (this.y < 80) this.dirY = 1;
 
@@ -983,7 +1045,7 @@ class Boss extends Entity {
     }
 
     behaviorDash(dt) {
-        this.y += 30 * this.dirY * dt;
+        this.y += 70 * this.dirY * dt;
         if (this.y > game.height - 80) this.dirY = -1;
         if (this.y < 80) this.dirY = 1;
 
@@ -1007,18 +1069,21 @@ class Boss extends Entity {
     }
 
     behaviorSine(dt) {
-        this.y = game.height / 2 + Math.sin(Date.now() / 500) * 150;
-        if (this.timer > 0.5) {
+        this.y = game.height / 2 + Math.sin(Date.now() / 500) * 190;
+        if (this.timer > 0.35) {
             this.timer = 0;
-            const aim = Math.max(-0.55, Math.min(0.55, (game.player.y - this.y) / 220));
-            game.bullets.push(new Bullet(this.x - 50, this.y, -0.9, aim, 'enemy'));
+            const aimAgg = game.enemyAimAggression || 1;
+            const aim = Math.max(-0.7, Math.min(0.7, (game.player.y - this.y) / (200 / aimAgg)));
+            game.bullets.push(new Bullet(this.x - 50, this.y, -1.0, aim, 'enemy'));
+            game.bullets.push(new Bullet(this.x - 50, this.y, -0.95, aim + 0.18, 'enemy'));
+            game.bullets.push(new Bullet(this.x - 50, this.y, -0.95, aim - 0.18, 'enemy'));
             game.sound.playEnemyLaser();
         }
     }
 
     behaviorTurret(dt) {
         // Stationary vertical
-        this.y += 80 * this.dirY * dt;
+        this.y += 115 * this.dirY * dt;
         if (this.y > game.height - 100) this.dirY = -1;
         if (this.y < 100) this.dirY = 1;
 
@@ -1032,7 +1097,7 @@ class Boss extends Entity {
 
     behaviorSpawn(dt) {
         // MutagenCore: vertical bob + constant swarm spawns
-        this.y += 90 * this.dirY * dt;
+        this.y += 140 * this.dirY * dt;
         if (this.y > game.height - 90) this.dirY = -1;
         if (this.y < 90) this.dirY = 1;
 
@@ -1056,7 +1121,7 @@ class Boss extends Entity {
     behaviorRing(dt) {
         const late = game.levelIndex >= 5;
         // Hover and sway near center
-        this.y = game.height / 2 + Math.sin(Date.now() / 700) * 120;
+        this.y = game.height / 2 + Math.sin(Date.now() / 700) * 170;
 
         const interval = late ? 1.2 : 2.5;
         if (this.timer > interval) {
@@ -1081,8 +1146,8 @@ class Boss extends Entity {
 
     behaviorSweep(dt) {
         // WarMech patrol: sinusoidal vertical sweep (35% of screen)
-        const amp = game.height * 0.35;
-        this.y = game.height / 2 + Math.sin(this.spin * 0.8) * amp;
+        const amp = game.height * 0.42;
+        this.y = game.height / 2 + Math.sin(this.spin * 1.05) * amp;
 
         const cadence = 1.6;
         if (this.timer > cadence) {
@@ -1112,8 +1177,8 @@ class Boss extends Entity {
     }
 
     behaviorSnake(dt) {
-        this.x = (game.width - 100) + Math.sin(Date.now() / 1000) * 50;
-        this.y = game.height / 2 + Math.cos(Date.now() / 800) * 150;
+        this.x = (game.width - 100) + Math.sin(Date.now() / 1000) * 80;
+        this.y = game.height / 2 + Math.cos(Date.now() / 800) * 200;
         const late = game.levelIndex >= 5;
         const interval = late ? 0.15 : 0.2;
         if (this.timer > interval) {
@@ -1140,7 +1205,7 @@ class Boss extends Entity {
         // High HP, slow shots
         const late = game.levelIndex >= 5;
         this.applyBoss6Strafe();
-        this.y = game.height / 2 + Math.sin(Date.now() / 1200) * 90;
+        this.y = game.height / 2 + Math.sin(Date.now() / 1200) * 130;
         const interval = late ? 1.1 : 2.0;
         if (this.timer > interval) {
             this.timer = 0;
@@ -1156,7 +1221,7 @@ class Boss extends Entity {
     behaviorBulletHell(dt) {
         // Final Boss
         this.applyBoss6Strafe();
-        this.y = game.height / 2 + Math.sin(Date.now() / 1000) * 100;
+        this.y = game.height / 2 + Math.sin(Date.now() / 1000) * 140;
         const interval = 0.05;
         if (this.timer > interval) {
             this.timer = 0;
@@ -1187,6 +1252,167 @@ class Boss extends Entity {
             game.bullets.push(new Bullet(this.x, this.y, -0.95, aim - 0.35, 'enemy'));
         }
     }
+
+    behaviorOblivion(dt) {
+        // Final boss: roaming, regenerating, relentless patterns
+        const ampX = game.width * 0.35;
+        const ampY = game.height * 0.4;
+        this.x = game.width / 2 + Math.sin(this.spin * 1.2) * ampX;
+        this.y = game.height / 2 + Math.cos(this.spin * 0.9) * ampY;
+
+        // One-time enrage: heal to 75% and gain shield when low
+        if (!this.enrageTriggered && this.hp / this.maxHp <= 0.2) {
+            this.enrageTriggered = true;
+            this.hp = Math.round(this.maxHp * 0.75);
+            this.entryInvuln = true;
+            this.entryShieldTimer = 1.2;
+            this.shieldHp = Math.round(this.maxHp * 0.4);
+        }
+
+        // Spiral barrage
+        if (this.timer > 0.18) {
+            this.timer = 0;
+            const baseAng = this.spin * 3.5;
+            const count = 16;
+            for (let i = 0; i < count; i++) {
+                const ang = baseAng + (i / count) * Math.PI * 2;
+                const speed = 0.8;
+                game.bullets.push(new Bullet(this.x, this.y, Math.cos(ang) * speed, Math.sin(ang) * speed, 'enemy'));
+            }
+            game.sound.playEnemyLaser();
+        }
+
+        // Aimed scythes
+        if (this.burstTimer > 0.7) {
+            this.burstTimer = 0;
+            const aim = (game.player.y - this.y) / 180;
+            const offsets = [-0.4, -0.2, 0, 0.2, 0.4];
+            offsets.forEach(off => {
+                game.bullets.push(new Bullet(this.x, this.y, -1.2 + Math.abs(off) * -0.1, aim + off, 'enemy'));
+            });
+        }
+
+        // Orb walls: slow drifting walls
+        if (this.hellTimer > 2.4) {
+            this.hellTimer = 0;
+            for (let i = -2; i <= 2; i++) {
+                const vy = i * 0.22;
+                game.bullets.push(new Bullet(this.x + 40, this.y, -0.5, vy, 'enemy'));
+            }
+        }
+    }
+
+    behaviorEclipse(dt) {
+        // Tall pillar boss with rotating laser slabs and tentacle volleys
+        const swayAmp = 70;
+        this.y = game.height / 2 + Math.sin(this.spin * 0.9) * swayAmp;
+        this.x = game.width - 140 + Math.sin(this.spin * 0.5) * 40;
+
+        // Periodic shield: 1s on every 5s
+        this.shieldCycle += dt;
+        if (this.shieldCycle >= 5) {
+            this.shieldCycle = 0;
+            this.shieldActiveTimer = 1;
+            this.shieldHp = this.maxHp * 0.35; // sizeable shield
+        }
+        if (this.shieldActiveTimer > 0) {
+            this.shieldActiveTimer -= dt;
+            if (this.shieldActiveTimer <= 0 && this.shieldHp > 0) {
+                this.shieldHp = 0;
+            }
+        }
+
+        // Rotating ring of bullets
+        if (this.timer > 0.35) {
+            this.timer = 0;
+            const count = 14;
+            const spin = this.spin * 1.5;
+            for (let i = 0; i < count; i++) {
+                const ang = spin + (i / count) * Math.PI * 2;
+                game.bullets.push(new Bullet(this.x, this.y, Math.cos(ang) * 0.6, Math.sin(ang) * 0.6, 'enemy'));
+            }
+            game.sound.playEnemyLaser();
+        }
+
+        // Vertical laser sweeps
+        if (this.burstTimer > 2.8) {
+            this.burstTimer = 0;
+            const lanes = [game.height * 0.25, game.height * 0.5, game.height * 0.75];
+            lanes.forEach((ly, idx) => {
+                const aim = (game.player.y - ly) / 260;
+                const baseVx = -1.2 + idx * 0.05;
+                game.bullets.push(new Bullet(this.x, ly, baseVx, aim, 'enemy'));
+                game.bullets.push(new Bullet(this.x, ly, baseVx, aim + 0.18, 'enemy'));
+                game.bullets.push(new Bullet(this.x, ly, baseVx, aim - 0.18, 'enemy'));
+            });
+        }
+
+        // Tentacle fan bursts (slower, bigger projectiles)
+        if (this.hellTimer > 1.4) {
+            this.hellTimer = 0;
+            const spread = 0.5;
+            const base = (game.player.y - this.y) / 240;
+            for (let i = -2; i <= 2; i++) {
+                const vx = -0.75 + Math.abs(i) * -0.02;
+                const vy = base + i * spread * 0.22;
+                game.bullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy'));
+            }
+        }
+    }
+    behaviorTwinAbyss(dt, phaseOffset = 0) {
+        // Twin bosses with mirrored paths
+        const cx = game.width - 200;
+        const cy = game.height / 2;
+        const swayX = Math.sin(this.spin * 0.8 + phaseOffset) * 120;
+        const swayY = Math.sin(this.spin * 1.2) * 170 * (this.twinId === 0 ? 1 : -1);
+        this.x = cx + swayX;
+        this.y = cy + swayY;
+
+        // Alternating shields: 10s interval, 4s duration, Alpha then Beta
+        const now = performance.now() / 1000;
+        const elapsed = now - this.spawnTime;
+        const slot = Math.floor(elapsed / 10); // 0-9s,10-19s, etc
+        const phase = elapsed % 10;
+        const isAlpha = this.twinId === 0;
+        const shouldShield = (isAlpha && slot % 2 === 0 && phase < 4) || (!isAlpha && slot % 2 === 1 && phase < 4);
+        if (shouldShield) {
+            if (this.shieldHp <= 0) this.shieldHp = Math.round(this.maxHp * 0.3);
+        } else if (this.shieldHp > 0) {
+            this.shieldHp = 0;
+        }
+
+        // Spiral burst
+        if (this.timer > 0.5) {
+            this.timer = 0;
+            const baseAng = this.spin * 3 + phaseOffset * 0.5;
+            const count = 10;
+            for (let i = 0; i < count; i++) {
+                const ang = baseAng + (i / count) * Math.PI * 2;
+                const speed = 0.55 + (this.twinId === 1 ? 0.08 : 0);
+                game.bullets.push(new Bullet(this.x, this.y, Math.cos(ang) * speed, Math.sin(ang) * speed, 'enemy'));
+            }
+            game.sound.playEnemyLaser();
+        }
+
+        // Aimed daggers
+        if (this.burstTimer > 1.6) {
+            this.burstTimer = 0;
+            const aim = (game.player.y - this.y) / 220;
+            const spread = this.twinId === 1 ? 0.28 : 0.2;
+            game.bullets.push(new Bullet(this.x, this.y, -0.9, aim, 'enemy'));
+            game.bullets.push(new Bullet(this.x, this.y, -0.85, aim + spread, 'enemy'));
+            game.bullets.push(new Bullet(this.x, this.y, -0.85, aim - spread, 'enemy'));
+        }
+
+        // Summon slow orbs that drift inward
+        if (this.hellTimer > 3.2) {
+            this.hellTimer = 0;
+            for (let i = -1; i <= 1; i++) {
+                const vy = (i * 0.2) + (this.twinId === 1 ? 0.05 : -0.05);
+                game.bullets.push(new Bullet(this.x - 20, this.y, -0.45, vy, 'enemy'));
+            }
+        }
+    }
 }
 
 // --- Game Engine ---
@@ -1196,7 +1422,7 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.width = this.canvas.width = window.innerWidth;
         this.height = this.canvas.height = window.innerHeight;
-        this.sprites = { player: null, playerForms: [], playerBullet: null, enemyBullet: null, weaponUpgrade: null, heal: null, scout: null, fighter: null, interceptor: null, tank: null, boss1: null, boss2: null, boss3: null, boss4: null, boss5: null, boss6: null, boss7: null, asteroids: [] };
+        this.sprites = { player: null, playerForms: [], playerBullet: null, enemyBullet: null, weaponUpgrade: null, heal: null, scout: null, fighter: null, interceptor: null, tank: null, boss1: null, boss2: null, boss3: null, boss4: null, boss5: null, boss6: null, boss7: null, boss8: null, boss9: null, boss10: null, asteroids: [] };
 
         this.sound = new SoundManager();
         this.input = new InputHandler();
@@ -1212,6 +1438,7 @@ class Game {
         this.hitsPerWeaponDowngrade = 3;
         this.playerHitCooldown = 0; // brief invuln window to avoid double-counting hits
         this.asteroidTimer = 0;
+        this.demoMode = false;
 
         // Init Stars
         for (let i = 0; i < 150; i++) {
@@ -1224,6 +1451,7 @@ class Game {
         }
 
         this.ui = {
+            root: document.getElementById('ui-layer'),
             start: document.getElementById('start-screen'),
             startBtn: document.getElementById('start-button'),
             hud: document.getElementById('hud'),
@@ -1236,7 +1464,17 @@ class Game {
             label: document.getElementById('level-progress-label'),
             bossBar: document.getElementById('boss-bar'),
             bossFill: document.getElementById('boss-bar-fill'),
-            bossLabel: document.getElementById('boss-label')
+            bossLabel: document.getElementById('boss-label'),
+            bossShield: document.getElementById('boss-shield-track'),
+            bossShieldFill: document.getElementById('boss-shield-fill'),
+            bossBar2: document.getElementById('boss-bar-2'),
+            bossFill2: document.getElementById('boss-bar-fill-2'),
+            bossLabel2: document.getElementById('boss-label-2'),
+            messageOverlay: document.getElementById('message-overlay'),
+            messageTitle: document.getElementById('message-title'),
+            messageBody: document.getElementById('message-body'),
+            messagePrimary: document.getElementById('message-primary'),
+            messageSecondary: document.getElementById('message-secondary')
         };
 
         this.score = 0;
@@ -1248,6 +1486,7 @@ class Game {
         this.spawnTimer = 0;
         this.enemySpeedScale = 1;
         this.enemyFireScale = 1;
+        this.enemyAimAggression = 1;
         if (this.ui.bossBar) this.ui.bossBar.classList.add('hidden');
 
         // Start button handlers (touch/click)
@@ -1267,6 +1506,7 @@ class Game {
             this.height = this.canvas.height = window.innerHeight;
         });
 
+        if (this.ui.root) this.ui.root.classList.add('start-mode');
         this.loadPlayerSprites();
         this.loadPlayerBulletSprite();
         this.loadEnemyBulletSprite();
@@ -1284,7 +1524,46 @@ class Game {
         this.loadBoss5Sprite();
         this.loadBoss6Sprite();
         this.loadBoss7Sprite();
+        this.loadBoss8Sprite();
+        this.loadBoss9Sprite();
+        this.loadBoss10Sprite();
         requestAnimationFrame(t => this.loop(t));
+    }
+
+    showMessage({ title = 'MESSAGE', body = '', primaryText = 'OK', secondaryText = null, tone = 'info', onPrimary = null, onSecondary = null }) {
+        const overlay = this.ui.messageOverlay;
+        const titleEl = this.ui.messageTitle;
+        const bodyEl = this.ui.messageBody;
+        const primaryBtn = this.ui.messagePrimary;
+        const secondaryBtn = this.ui.messageSecondary;
+        if (!overlay || !titleEl || !bodyEl || !primaryBtn) {
+            console.error(title + " :: " + body);
+            if (typeof onPrimary === 'function') onPrimary();
+            return;
+        }
+
+        overlay.dataset.tone = tone || 'info';
+        titleEl.textContent = title;
+        bodyEl.textContent = body;
+        overlay.classList.remove('hidden');
+
+        primaryBtn.textContent = primaryText;
+        primaryBtn.onclick = () => {
+            overlay.classList.add('hidden');
+            if (typeof onPrimary === 'function') onPrimary();
+        };
+
+        if (secondaryText && secondaryBtn) {
+            secondaryBtn.classList.remove('hidden');
+            secondaryBtn.textContent = secondaryText;
+            secondaryBtn.onclick = () => {
+                overlay.classList.add('hidden');
+                if (typeof onSecondary === 'function') onSecondary();
+            };
+        } else if (secondaryBtn) {
+            secondaryBtn.classList.add('hidden');
+            secondaryBtn.onclick = null;
+        }
     }
 
     loadPlayerSprites() {
@@ -1611,6 +1890,60 @@ class Game {
         img.onerror = (e) => console.error('Failed to load boss sprite', e);
     }
 
+    loadBoss9Sprite() {
+        const img = new Image();
+        img.src = 'assets/boss_9_sprite-removebg-preview.png';
+        img.onload = () => {
+            const size = 170; // Tall pillar; give more canvas height
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.boss9 = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load boss 9 sprite', e);
+    }
+
+    loadBoss8Sprite() {
+        const img = new Image();
+        img.src = 'assets/boss_8_sprite-removebg-preview.png';
+        img.onload = () => {
+            const size = 160; // Boss hitbox ~110, slightly larger canvas
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.boss8 = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load boss 8 sprite', e);
+    }
+
+    loadBoss10Sprite() {
+        const img = new Image();
+        img.src = 'assets/final boss level 10.png';
+        img.onload = () => {
+            const size = 180; // Very tall, give room
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.boss10 = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load boss 10 sprite', e);
+    }
+
     getPlayerSpriteForWeapon(level = 1) {
         const wl = Math.max(1, Math.min(level, WEAPON_PATTERNS.length));
         const forms = this.sprites.playerForms || [];
@@ -1632,9 +1965,14 @@ class Game {
     start() {
         if (this.isRunning) return;
         this.isRunning = true;
+        if (this.ui.messageOverlay) this.ui.messageOverlay.classList.add('hidden');
         this.ui.start.classList.add('hidden');
         if (this.ui.version) this.ui.version.classList.add('hidden');
         this.ui.hud.classList.remove('hidden');
+        if (this.ui.root) {
+            this.ui.root.classList.remove('start-mode');
+            this.ui.root.classList.add('playing');
+        }
         this.score = 0;
         this.levelIndex = 0;
         this.startLevel();
@@ -1665,10 +2003,12 @@ class Game {
         const config = LEVEL_CONFIG[this.levelIndex];
         this.enemySpeedScale = config.enemySpeedScale || 1;
         this.enemyFireScale = config.enemyFireScale || 1;
+        this.enemyAimAggression = config.enemyAimAggression || 1;
         this.ui.level.innerText = config.name + " (LVL " + (this.levelIndex + 1) + ")";
         this.ui.label.innerText = "BOSS APPROACHING";
         this.ui.label.style.color = "#ff0";
         if (this.ui.bossBar) this.ui.bossBar.classList.add('hidden');
+        if (this.ui.bossBar2) this.ui.bossBar2.classList.add('hidden');
         // Reset drop counters and limits per level
         this.dropCounts = { weapon: 0, heal: 0, core: 0, shield: 0 };
         this.dropLimits.weapon = 3;
@@ -1723,23 +2063,7 @@ class Game {
 
         // Boss Spawn
         if (this.levelTime >= config.duration && !this.bossSpawned) {
-            this.bossSpawned = true;
-            // this.enemies = []; // REMOVED: Keep existing enemies
-            const boss = new Boss(this.width + 100, this.height / 2, config.boss);
-            // Scale Boss HP by level
-            boss.maxHp += this.levelIndex * 200;
-            if (this.levelIndex >= 4) boss.maxHp = Math.round(boss.maxHp * 1.1); // 10% bump from level 5 onward
-            boss.hp = boss.maxHp;
-            if (config.boss === 'CitadelAegis') {
-                boss.shieldHp = 250;
-            }
-            this.enemies.push(boss);
-
-            this.ui.label.innerText = "WARNING: BOSS DETECTED";
-            this.ui.label.style.color = "#f00";
-            this.sound.playBossWarning();
-            this.sound.playMusic('boss');
-            if (this.ui.bossBar) this.ui.bossBar.classList.remove('hidden');
+            this.spawnBossForCurrentLevel();
         }
 
         // Spawner
@@ -1821,17 +2145,33 @@ class Game {
         const healthScale = Math.min(1.6, this.player.maxHp / 100); // allow up to 60% wider bar
         if (this.ui.healthBar) this.ui.healthBar.style.width = (baseHealthWidth * healthScale) + 'px';
         this.ui.hp.style.width = Math.max(0, (this.player.hp / this.player.maxHp) * 100) + '%';
-        const boss = this.enemies.find(e => e.type === 99);
-        if (boss && this.ui.bossBar) {
+        const bosses = this.enemies.filter(e => e.type === 99 && e.active);
+        if (bosses.length > 0 && this.ui.bossBar) {
+            const b1 = bosses[0];
             this.ui.bossBar.classList.remove('hidden');
-            if (this.ui.bossFill) {
-                this.ui.bossFill.style.width = Math.max(0, (boss.hp / boss.maxHp) * 100) + '%';
+            if (this.ui.bossFill) this.ui.bossFill.style.width = Math.max(0, (b1.hp / b1.maxHp) * 100) + '%';
+            if (this.ui.bossLabel) this.ui.bossLabel.innerText = b1.name + ' HP';
+            if (this.ui.bossShield) {
+                if (b1.shieldHp > 0) {
+                    this.ui.bossShield.classList.remove('hidden');
+                    if (this.ui.bossShieldFill) this.ui.bossShieldFill.style.width = Math.max(0, (b1.shieldHp / b1.maxHp) * 100) + '%';
+                } else {
+                    this.ui.bossShield.classList.add('hidden');
+                }
             }
-            if (this.ui.bossLabel) {
-                this.ui.bossLabel.innerText = boss.name + ' HP';
+            // Second bar only if twin boss exists
+            const b2 = bosses[1];
+            if (b2 && this.ui.bossBar2) {
+                this.ui.bossBar2.classList.remove('hidden');
+                if (this.ui.bossFill2) this.ui.bossFill2.style.width = Math.max(0, (b2.hp / b2.maxHp) * 100) + '%';
+                if (this.ui.bossLabel2) this.ui.bossLabel2.innerText = b2.name + ' HP';
+            } else if (this.ui.bossBar2) {
+                this.ui.bossBar2.classList.add('hidden');
             }
-        } else if (this.ui.bossBar) {
-            this.ui.bossBar.classList.add('hidden');
+        } else {
+            if (this.ui.bossBar) this.ui.bossBar.classList.add('hidden');
+            if (this.ui.bossShield) this.ui.bossShield.classList.add('hidden');
+            if (this.ui.bossBar2) this.ui.bossBar2.classList.add('hidden');
         }
     }
 
@@ -1881,6 +2221,10 @@ class Game {
                 if (dist < (e.width / 2 + 5)) {
                     b.active = false;
                     const dmg = 10;
+                    if (e.type === 99 && e.entryInvuln) {
+                        // Ignore damage while boss is phasing in
+                        return;
+                    }
                     if (e.type === 99 && e.shieldHp > 0) {
                         e.shieldHp = Math.max(0, e.shieldHp - dmg);
                         this.sound.playEnemyLaser();
@@ -1894,7 +2238,8 @@ class Game {
                         if (e.type !== 99) this.spawnDrop(e.x, e.y);
 
                         if (e.type === 99) {
-                            this.nextLevel();
+                            const hasOtherBoss = this.enemies.some(other => other !== e && other.type === 99 && other.active);
+                            if (!hasOtherBoss) this.nextLevel();
                         }
                     }
                 }
@@ -1975,11 +2320,55 @@ class Game {
         }
     }
 
+    spawnBossForCurrentLevel() {
+        if (this.bossSpawned) return;
+        const config = LEVEL_CONFIG[this.levelIndex];
+        this.bossSpawned = true;
+        const bossesToSpawn = Array.isArray(config.boss) ? config.boss : [config.boss];
+        bossesToSpawn.forEach((bName, idx) => {
+            const offsetY = idx === 0 ? -80 : 80;
+            const boss = new Boss(this.width + 100 + idx * 30, this.height / 2 + offsetY, bName);
+            boss.twinId = config.twinBoss ? idx : null;
+            // Scale Boss HP by level
+            boss.maxHp += this.levelIndex * 200;
+            if (this.levelIndex >= 4) boss.maxHp = Math.round(boss.maxHp * 1.1); // 10% bump from level 5 onward
+            // Slightly lower HP per twin to keep total fair
+            if (config.twinBoss) boss.maxHp = Math.round(boss.maxHp * 0.7);
+            boss.hp = boss.maxHp;
+            if (bName === 'CitadelAegis') {
+                boss.shieldHp = 250;
+            }
+            this.enemies.push(boss);
+        });
+
+        this.ui.label.innerText = "WARNING: BOSS DETECTED";
+        this.ui.label.style.color = "#f00";
+        this.sound.playBossWarning();
+        const musicKey = bossesToSpawn[0];
+        this.sound.playMusic('boss', musicKey);
+        if (this.ui.bossBar) this.ui.bossBar.classList.remove('hidden');
+        if (config.twinBoss && this.ui.bossBar2) this.ui.bossBar2.classList.remove('hidden');
+    }
+
     nextLevel() {
+        const completedLevel = LEVEL_CONFIG[this.levelIndex];
         this.levelIndex++;
         if (this.levelIndex >= LEVEL_CONFIG.length) {
-            alert("CONGRATULATIONS! YOU HAVE SAVED THE GALAXY!\nFinal Score: " + this.score);
-            location.reload();
+            this.isRunning = false;
+            this.sound.stopMusic();
+            this.showMessage({
+                title: 'GALAXY SECURED',
+                body: [
+                    "CONGRATULATIONS, PILOT! YOU HAVE SAVED THE GALAXY.",
+                    "Final Score: " + this.score,
+                    completedLevel ? "Last Sector: " + completedLevel.name : null,
+                    "",
+                    "Mission Report: Take a screenshot of this message and DM it to @saimsatisfied on Instagram to claim your reward. The fleet awaits your proof of heroics."
+                ].filter(Boolean).join("\n"),
+                primaryText: 'PLAY AGAIN',
+                tone: 'victory',
+                onPrimary: () => location.reload()
+            });
             return;
         }
 
@@ -1989,12 +2378,20 @@ class Game {
         this.startLevel();
     }
 
+
     gameOver() {
         this.isRunning = false;
         this.sound.stopMusic();
-        alert("GAME OVER\nScore: " + this.score + "\nReached: " + LEVEL_CONFIG[this.levelIndex].name);
-        location.reload();
+        const reached = LEVEL_CONFIG[this.levelIndex] ? LEVEL_CONFIG[this.levelIndex].name : 'UNKNOWN ZONE';
+        this.showMessage({
+            title: 'MISSION FAILED',
+            body: "Score: " + this.score + "\nReached: " + reached,
+            primaryText: 'TRY AGAIN',
+            tone: 'alert',
+            onPrimary: () => location.reload()
+        });
     }
 }
 
 const game = new Game();
+window.game = game;
