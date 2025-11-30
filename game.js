@@ -62,14 +62,14 @@ const WEAPON_PATTERNS = [
 // --- Level Configuration ---
 const LEVEL_CONFIG = [
     { duration: 60, spawnRate: 2.6, bgSpeed: 0.5, enemies: [11], boss: 'ScrapGuardian', name: "DEBRIS BELT", enemySpeedScale: 0.75, enemyFireScale: 1.25 },
-    { duration: 60, spawnRate: 2.4, bgSpeed: 0.8, enemies: [11, 20, 20], boss: 'RaiderCaptain', name: "ASTEROID FIELD", enemySpeedScale: 0.8, enemyFireScale: 1.2 },
+    { duration: 60, spawnRate: 1.8, bgSpeed: 0.8, enemies: [11, 20, 20], boss: 'RaiderCaptain', name: "ASTEROID FIELD", enemySpeedScale: 0.8, enemyFireScale: 1.2 },
     { duration: 60, spawnRate: 2.2, bgSpeed: 1.0, enemies: [11, 12], boss: 'IonWyrm', name: "ION NEBULA", enemySpeedScale: 0.85, enemyFireScale: 1.15 },
-    { duration: 60, spawnRate: 2.0, bgSpeed: 1.2, enemies: [11, 12, 20, 20], boss: 'DockOverseer', name: "ORBITAL DOCK", enemySpeedScale: 0.9, enemyFireScale: 1.1 },
+    { duration: 60, spawnRate: 1.5, bgSpeed: 1.2, enemies: [11, 12, 20, 20], boss: 'DockOverseer', name: "ORBITAL DOCK", enemySpeedScale: 0.9, enemyFireScale: 1.1 },
     { duration: 60, spawnRate: 1.8, bgSpeed: 1.5, enemies: [12, 13], boss: 'MutagenCore', name: "BIO LABS", enemySpeedScale: 0.95, enemyFireScale: 1.05 },
-    { duration: 60, spawnRate: 0.9, bgSpeed: 2.0, enemies: [12, 13, 14, 20, 20], boss: 'RingFortress', name: "DEFENSE GRID" },
+    { duration: 60, spawnRate: 0.7, bgSpeed: 2.0, enemies: [12, 13, 14, 20, 20], boss: 'RingFortress', name: "DEFENSE GRID" },
     { duration: 60, spawnRate: 0.8, bgSpeed: 2.5, enemies: [13, 14], boss: 'WarMech', name: "FACTORY SECTOR" },
-    { duration: 60, spawnRate: 0.7, bgSpeed: 3.0, enemies: [11, 12, 13, 14, 20, 20], boss: 'TunnelSerpent', name: "DEEP SPACE" },
-    { duration: 60, spawnRate: 0.6, bgSpeed: 4.0, enemies: [13, 14, 20, 20], boss: 'CitadelAegis', name: "THE CITADEL" },
+    { duration: 60, spawnRate: 0.55, bgSpeed: 3.0, enemies: [11, 12, 13, 14, 20, 20], boss: 'TunnelSerpent', name: "DEEP SPACE" },
+    { duration: 60, spawnRate: 0.45, bgSpeed: 4.0, enemies: [13, 14, 20, 20], boss: 'CitadelAegis', name: "THE CITADEL" },
     { duration: 60, spawnRate: 0.5, bgSpeed: 5.0, enemies: [11, 12, 13, 14, 20], boss: 'CoreOvermind', name: "CORE SYSTEM" }
 ];
 
@@ -372,7 +372,13 @@ class Entity {
         // Visuals based on Type
         switch (this.type) {
             case 0: // Player
-                if (game?.sprites?.player) {
+                if (game?.getPlayerSpriteForWeapon) {
+                    const sprite = game.getPlayerSpriteForWeapon(game.player?.weaponLevel || 1);
+                    if (sprite) {
+                        ctx.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
+                        break;
+                    }
+                } else if (game?.sprites?.player) {
                     ctx.drawImage(game.sprites.player, -32, -32);
                     break;
                 }
@@ -487,6 +493,17 @@ class Entity {
                 ctx.fillRect(-3, -8, 6, 16);
                 ctx.fillRect(-8, -3, 16, 6);
                 break;
+            case 33: // Shield pickup
+                ctx.fillStyle = '#64c0ff';
+                ctx.beginPath();
+                ctx.arc(0, 0, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#b6e6ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, 8, 0, Math.PI * 2);
+                ctx.stroke();
+                break;
             case 99: // Boss (Generic fallback or specific drawing in Boss class)
                 ctx.fillStyle = '#ff0000';
                 ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
@@ -502,6 +519,7 @@ class Item extends Entity {
         if (kind === 'weapon') typeId = 30;
         else if (kind === 'heal') typeId = 31;
         else if (kind === 'core') typeId = 32;
+        else if (kind === 'shield') typeId = 33;
         super(x, y, 20, 20, typeId);
         this.kind = kind;
         this.vx = -ENEMY_BASE_SPEED * 0.6;
@@ -520,6 +538,7 @@ class Player extends Entity {
         super(x, y, 32, 32, 0);
         this.hp = 100;
         this.maxHp = 100;
+        this.shieldHits = 0;
         this.lastShoot = 0;
         this.weaponLevel = 1; // 1-7
         this.fireInterval = 0.35;
@@ -657,10 +676,10 @@ class Asteroid extends Entity {
     constructor(x, y) {
         const roll = Math.random();
         const config = roll > 0.65
-            ? { radius: 55 + Math.random() * 30, hp: 90, speed: 0.65 }     // Large chunks
+            ? { radius: 55 + Math.random() * 30, hp: 90, speed: 1.0 }      // Large chunks (faster)
             : roll > 0.3
-                ? { radius: 30 + Math.random() * 18, hp: 60, speed: 0.85 }  // Medium rocks
-                : { radius: 12 + Math.random() * 10, hp: 30, speed: 2.0 }; // Small debris (fast, bullet-like)
+                ? { radius: 30 + Math.random() * 18, hp: 60, speed: 1.3 }   // Medium rocks (faster)
+                : { radius: 12 + Math.random() * 10, hp: 30, speed: 2.6 };  // Small debris (much faster)
 
         const sizeJitter = 0.75 + Math.random() * 0.5;
         const diameter = config.radius * 2 * sizeJitter;
@@ -728,11 +747,15 @@ class Boss extends Entity {
         this.name = name;
         this.hp = 500;
         this.maxHp = 500;
+        this.shieldHp = 0;
+        this.followupReady = false;
         this.timer = 0;
         this.phase = 0;
         this.dirY = 1;
         this.burstTimer = 0; // secondary timer for advanced patterns
         this.spin = 0;       // used for rotating volleys
+        this.hellTimer = 0;
+        this.swarmIndex = 0; // used by spawner bosses
     }
 
     draw(ctx) {
@@ -764,12 +787,16 @@ class Boss extends Entity {
             ctx.scale(scale, scale);
             ctx.drawImage(game.sprites.boss2, -70, -70);
             ctx.restore();
-        } else if ((this.name === 'IonWyrm' || this.name === 'DockOverseer') && game?.sprites?.boss3) {
+        } else if (this.name === 'IonWyrm' && game?.sprites?.boss3) {
             ctx.drawImage(game.sprites.boss3, -80, -80);
-        } else if ((this.name === 'MutagenCore' || this.name === 'RingFortress') && game?.sprites?.boss4) {
+        } else if (this.name === 'DockOverseer' && game?.sprites?.boss4) { // Level 4 -> boss 4 art
             ctx.drawImage(game.sprites.boss4, -80, -80);
-        } else if (this.name === 'WarMech' && game?.sprites?.boss5) {
+        } else if (this.name === 'MutagenCore' && game?.sprites?.boss5) { // Level 5 -> boss 5 art
             ctx.drawImage(game.sprites.boss5, -80, -80);
+        } else if (this.name === 'RingFortress' && game?.sprites?.boss6) { // Level 6 -> boss 6 art
+            ctx.drawImage(game.sprites.boss6, -80, -80);
+        } else if (this.name === 'WarMech' && game?.sprites?.boss7) {
+            ctx.drawImage(game.sprites.boss7, -80, -80);
         } else if (this.name === 'TunnelSerpent' && game?.sprites?.boss7) {
             ctx.drawImage(game.sprites.boss7, -80, -80);
         } else if ((this.name === 'CitadelAegis' || this.name === 'CoreOvermind') && game?.sprites?.boss6) {
@@ -890,6 +917,18 @@ class Boss extends Entity {
             ctx.strokeStyle = '#ff99bb'; ctx.stroke();
         }
 
+        // Shield visual indicator
+        if (this.shieldHp > 0) {
+            const radius = 90 + Math.sin(Date.now() * 0.01) * 4;
+            const grad = ctx.createRadialGradient(0, 0, radius * 0.65, 0, 0, radius);
+            grad.addColorStop(0, 'rgba(120, 210, 255, 0.35)');
+            grad.addColorStop(1, 'rgba(120, 210, 255, 0.05)');
+            ctx.strokeStyle = 'rgba(120, 210, 255, 0.5)';
+            ctx.fillStyle = grad;
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        }
+
         ctx.restore();
     }
 
@@ -900,7 +939,8 @@ class Boss extends Entity {
 
         // Entrance
         if (this.x > game.width - 150) {
-            this.x -= 50 * dt;
+            const entrySpeed = this.name === 'ScrapGuardian' ? 160 : 50;
+            this.x -= entrySpeed * dt;
             return;
         }
 
@@ -929,13 +969,15 @@ class Boss extends Entity {
     }
 
     behaviorBasic(dt) {
-        this.y += 50 * this.dirY * dt;
+        this.y += 80 * this.dirY * dt;
         if (this.y > game.height - 80) this.dirY = -1;
         if (this.y < 80) this.dirY = 1;
 
-        if (this.timer > 1.5) {
+        if (this.timer > 1.2) {
             this.timer = 0;
-            game.bullets.push(new Bullet(this.x - 50, this.y, -0.5, 0, 'enemy'));
+            const spread = 18;
+            game.bullets.push(new Bullet(this.x - 50, this.y - spread, -0.6, 0, 'enemy'));
+            game.bullets.push(new Bullet(this.x - 50, this.y + spread, -0.6, 0, 'enemy'));
             game.sound.playEnemyLaser();
         }
     }
@@ -947,26 +989,36 @@ class Boss extends Entity {
 
         if (this.timer > 2.0) {
             this.timer = 0;
-            // Spread
-            for (let i = -2; i <= 2; i++) {
-                game.bullets.push(new Bullet(this.x - 40, this.y, -0.6, i * 0.2, 'enemy'));
-            }
-            game.sound.playEnemyLaser();
+            this.fireDashVolley();
+            this.burstTimer = 0; // reuse as follow-up timer
+            this.followupReady = true;
+        } else if (this.followupReady && this.burstTimer > 0.2) {
+            this.burstTimer = 0;
+            this.followupReady = false;
+            this.fireDashVolley();
         }
+    }
+
+    fireDashVolley() {
+        for (let i = -2; i <= 2; i++) {
+            game.bullets.push(new Bullet(this.x - 40, this.y, -0.6, i * 0.22, 'enemy'));
+        }
+        game.sound.playEnemyLaser();
     }
 
     behaviorSine(dt) {
         this.y = game.height / 2 + Math.sin(Date.now() / 500) * 150;
         if (this.timer > 0.5) {
             this.timer = 0;
-            game.bullets.push(new Bullet(this.x - 50, this.y, -0.8, 0, 'enemy'));
+            const aim = Math.max(-0.55, Math.min(0.55, (game.player.y - this.y) / 220));
+            game.bullets.push(new Bullet(this.x - 50, this.y, -0.9, aim, 'enemy'));
             game.sound.playEnemyLaser();
         }
     }
 
     behaviorTurret(dt) {
         // Stationary vertical
-        this.y += 20 * this.dirY * dt;
+        this.y += 80 * this.dirY * dt;
         if (this.y > game.height - 100) this.dirY = -1;
         if (this.y < 100) this.dirY = 1;
 
@@ -979,9 +1031,25 @@ class Boss extends Entity {
     }
 
     behaviorSpawn(dt) {
+        // MutagenCore: vertical bob + constant swarm spawns
+        this.y += 90 * this.dirY * dt;
+        if (this.y > game.height - 90) this.dirY = -1;
+        if (this.y < 90) this.dirY = 1;
+
+        // Legacy periodic spawn (kept for pacing)
         if (this.timer > 3.0) {
             this.timer = 0;
             game.enemies.push(new Enemy(this.x - 50, this.y, 11, game.enemySpeedScale, game.enemyFireScale)); // Spawn minion
+        }
+
+        // Rapid swarm: rotate through enemy archetypes every 0.4s
+        if (this.burstTimer > 0.4) {
+            this.burstTimer = 0;
+            const swarmTypes = [11, 12, 13, 14];
+            const type = swarmTypes[this.swarmIndex % swarmTypes.length];
+            this.swarmIndex += 1;
+            const yOffset = Math.sin(Date.now() * 0.004) * 50;
+            game.enemies.push(new Enemy(this.x - 60, this.y + yOffset, type, game.enemySpeedScale, game.enemyFireScale));
         }
     }
 
@@ -1089,22 +1157,34 @@ class Boss extends Entity {
         // Final Boss
         this.applyBoss6Strafe();
         this.y = game.height / 2 + Math.sin(Date.now() / 1000) * 100;
-        const interval = game.levelIndex >= 5 ? 0.08 : 0.1;
+        const interval = 0.05;
         if (this.timer > interval) {
             this.timer = 0;
             const angle = (Date.now() / 500);
-            game.bullets.push(new Bullet(this.x, this.y, Math.cos(angle) * 0.6, Math.sin(angle) * 0.6, 'enemy'));
-            game.bullets.push(new Bullet(this.x, this.y, Math.cos(angle + Math.PI) * 0.6, Math.sin(angle + Math.PI) * 0.6, 'enemy'));
+            const speed = 0.75;
+            game.bullets.push(new Bullet(this.x, this.y, Math.cos(angle) * speed, Math.sin(angle) * speed, 'enemy'));
+            game.bullets.push(new Bullet(this.x, this.y, Math.cos(angle + Math.PI) * speed, Math.sin(angle + Math.PI) * speed, 'enemy'));
         }
-        if (this.burstTimer > 1.2) {
+        if (this.burstTimer > 0.9) {
             this.burstTimer = 0;
-            const count = 18;
+            const count = 28;
             const spin = this.spin * 2;
             for (let i = 0; i < count; i++) {
                 const ang = spin + (i / count) * Math.PI * 2;
-                game.bullets.push(new Bullet(this.x, this.y, Math.cos(ang) * 0.55, Math.sin(ang) * 0.55, 'enemy'));
+                game.bullets.push(new Bullet(this.x, this.y, Math.cos(ang) * 0.65, Math.sin(ang) * 0.65, 'enemy'));
             }
             game.sound.playEnemyLaser();
+        }
+        this.hellTimer += dt;
+        if (this.hellTimer > 0.35) {
+            this.hellTimer = 0;
+            // Aimed dagger spread
+            const aim = (game.player.y - this.y) / 200;
+            game.bullets.push(new Bullet(this.x, this.y, -1.1, aim, 'enemy'));
+            game.bullets.push(new Bullet(this.x, this.y, -1.05, aim + 0.2, 'enemy'));
+            game.bullets.push(new Bullet(this.x, this.y, -1.05, aim - 0.2, 'enemy'));
+            game.bullets.push(new Bullet(this.x, this.y, -0.95, aim + 0.35, 'enemy'));
+            game.bullets.push(new Bullet(this.x, this.y, -0.95, aim - 0.35, 'enemy'));
         }
     }
 }
@@ -1116,7 +1196,7 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.width = this.canvas.width = window.innerWidth;
         this.height = this.canvas.height = window.innerHeight;
-        this.sprites = { player: null, playerBullet: null, enemyBullet: null, weaponUpgrade: null, heal: null, scout: null, fighter: null, interceptor: null, tank: null, boss1: null, boss2: null, boss3: null, boss4: null, boss5: null, boss6: null, boss7: null, asteroids: [] };
+        this.sprites = { player: null, playerForms: [], playerBullet: null, enemyBullet: null, weaponUpgrade: null, heal: null, scout: null, fighter: null, interceptor: null, tank: null, boss1: null, boss2: null, boss3: null, boss4: null, boss5: null, boss6: null, boss7: null, asteroids: [] };
 
         this.sound = new SoundManager();
         this.input = new InputHandler();
@@ -1126,8 +1206,8 @@ class Game {
         this.enemies = [];
         this.items = [];
         this.stars = [];
-        this.dropCounts = { weapon: 0, heal: 0, core: 0 };
-        this.dropLimits = { weapon: 3, heal: 5, core: 1 };
+        this.dropCounts = { weapon: 0, heal: 0, core: 0, shield: 0 };
+        this.dropLimits = { weapon: 3, heal: 3, core: 1, shield: 0 };
         this.playerHitCounter = 0;
         this.hitsPerWeaponDowngrade = 3;
         this.playerHitCooldown = 0; // brief invuln window to avoid double-counting hits
@@ -1187,7 +1267,7 @@ class Game {
             this.height = this.canvas.height = window.innerHeight;
         });
 
-        this.loadPlayerSprite();
+        this.loadPlayerSprites();
         this.loadPlayerBulletSprite();
         this.loadEnemyBulletSprite();
         this.loadWeaponUpgradeSprite();
@@ -1207,22 +1287,33 @@ class Game {
         requestAnimationFrame(t => this.loop(t));
     }
 
-    loadPlayerSprite() {
-        const img = new Image();
-        img.src = 'assets/player sprite first.png';
-        img.onload = () => {
-            const size = 64;
-            const scaled = document.createElement('canvas');
-            scaled.width = size;
-            scaled.height = size;
-            const ctx = scaled.getContext('2d');
-            const scale = size / Math.max(img.width, img.height);
-            const w = img.width * scale;
-            const h = img.height * scale;
-            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
-            this.sprites.player = scaled;
-        };
-        img.onerror = (e) => console.error('Failed to load player sprite', e);
+    loadPlayerSprites() {
+        const files = [
+            { src: 'assets/sprite1.png', size: 72 }, // levels 1-2
+            { src: 'assets/sprite2.png', size: 76 }, // level 3
+            { src: 'assets/sprite3.png', size: 80 }, // level 4
+            { src: 'assets/sprite4.png', size: 86 }, // level 5
+            { src: 'assets/sprite5.png', size: 92 }  // levels 6-7
+        ];
+        this.sprites.playerForms = new Array(files.length).fill(null);
+        files.forEach((file, idx) => {
+            const img = new Image();
+            img.src = file.src;
+            img.onload = () => {
+                const size = file.size;
+                const scaled = document.createElement('canvas');
+                scaled.width = size;
+                scaled.height = size;
+                const ctx = scaled.getContext('2d');
+                const scale = size / Math.max(img.width, img.height);
+                const w = img.width * scale;
+                const h = img.height * scale;
+                ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+                this.sprites.playerForms[idx] = scaled;
+                if (idx === 0) this.sprites.player = scaled; // ensure base sprite fallback
+            };
+            img.onerror = (e) => console.error('Failed to load player sprite', file.src, e);
+        });
     }
 
     loadPlayerBulletSprite() {
@@ -1520,6 +1611,24 @@ class Game {
         img.onerror = (e) => console.error('Failed to load boss sprite', e);
     }
 
+    getPlayerSpriteForWeapon(level = 1) {
+        const wl = Math.max(1, Math.min(level, WEAPON_PATTERNS.length));
+        const forms = this.sprites.playerForms || [];
+        let sprite = null;
+        if (wl <= 2) {
+            sprite = forms[0];
+        } else if (wl === 3) {
+            sprite = forms[1] || forms[0];
+        } else if (wl === 4) {
+            sprite = forms[2] || forms[1] || forms[0];
+        } else if (wl === 5) {
+            sprite = forms[3] || forms[2] || forms[1] || forms[0];
+        } else { // wl 6-7
+            sprite = forms[4] || forms[3] || forms[2] || forms[1] || forms[0];
+        }
+        return sprite || this.sprites.player || null;
+    }
+
     start() {
         if (this.isRunning) return;
         this.isRunning = true;
@@ -1561,10 +1670,11 @@ class Game {
         this.ui.label.style.color = "#ff0";
         if (this.ui.bossBar) this.ui.bossBar.classList.add('hidden');
         // Reset drop counters and limits per level
-        this.dropCounts = { weapon: 0, heal: 0, core: 0 };
+        this.dropCounts = { weapon: 0, heal: 0, core: 0, shield: 0 };
         this.dropLimits.weapon = 3;
-        this.dropLimits.heal = 3;
+        this.dropLimits.heal = this.levelIndex >= 4 ? 13 : 3; // +10 heal drops from level 5 onward
         this.dropLimits.core = 1;
+        this.dropLimits.shield = this.levelIndex >= 5 ? 1 : 0; // Shield drops from level 6+
 
         // Show overlay
         this.sound.playMusic('level');
@@ -1585,6 +1695,11 @@ class Game {
 
     applyPlayerHit(damage) {
         if (this.playerHitCooldown > 0) return;
+        if (this.player.shieldHits > 0) {
+            this.player.shieldHits -= 1;
+            this.playerHitCooldown = 0.2;
+            return;
+        }
         this.player.hp -= damage;
         this.playerHitCounter += 1;
         if (this.playerHitCounter % this.hitsPerWeaponDowngrade === 0) this.player.downgradeWeapon();
@@ -1615,6 +1730,9 @@ class Game {
             boss.maxHp += this.levelIndex * 200;
             if (this.levelIndex >= 4) boss.maxHp = Math.round(boss.maxHp * 1.1); // 10% bump from level 5 onward
             boss.hp = boss.maxHp;
+            if (config.boss === 'CitadelAegis') {
+                boss.shieldHp = 250;
+            }
             this.enemies.push(boss);
 
             this.ui.label.innerText = "WARNING: BOSS DETECTED";
@@ -1638,32 +1756,43 @@ class Game {
             }
 
             this.spawnTimer += dt;
-            if (this.spawnTimer > config.spawnRate) {
+            const heavyAst = this.isAsteroidHeavyLevel();
+            const progress = Math.min(1, this.levelTime / config.duration);
+            let effectiveSpawnRate = config.spawnRate;
+            if (heavyAst) {
+                // Speed up spawns as the level progresses for asteroid-heavy stages
+                const accel = Math.max(0.35, 0.75 - progress * 0.4);
+                effectiveSpawnRate = Math.max(config.spawnRate * accel, config.spawnRate * 0.3);
+            }
+
+            if (this.spawnTimer > effectiveSpawnRate) {
                 this.spawnTimer = 0;
-                const y = Math.random() * (this.height - 60) + 30;
+                const spawns = heavyAst ? Math.min(4, 2 + Math.floor(progress * 3)) : 1; // 2-4 enemies per tick on asteroid levels
+                for (let s = 0; s < spawns; s++) {
+                    const y = Math.random() * (this.height - 60) + 30;
+                    // Pick random enemy from allowed types
+                    const type = config.enemies[Math.floor(Math.random() * config.enemies.length)];
 
-                // Pick random enemy from allowed types
-                const type = config.enemies[Math.floor(Math.random() * config.enemies.length)];
-
-                if (type === 20) {
-                    this.enemies.push(new Asteroid(this.width + 50, y));
-                } else if (type === 13) {
-                    const count = 5;
-                    const spacing = 48;
-                    const startY = Math.min(Math.max(40, y - ((count - 1) * spacing) / 2), this.height - 40 - (count - 1) * spacing);
-                    for (let i = 0; i < count; i++) {
-                        const rowY = startY + i * spacing;
-                        this.enemies.push(new Enemy(this.width + 50 + i * 12, rowY, type, this.enemySpeedScale, this.enemyFireScale));
+                    if (type === 20) {
+                        this.enemies.push(new Asteroid(this.width + 50, y));
+                    } else if (type === 13) {
+                        const count = 5;
+                        const spacing = 48;
+                        const startY = Math.min(Math.max(40, y - ((count - 1) * spacing) / 2), this.height - 40 - (count - 1) * spacing);
+                        for (let i = 0; i < count; i++) {
+                            const rowY = startY + i * spacing;
+                            this.enemies.push(new Enemy(this.width + 50 + i * 12, rowY, type, this.enemySpeedScale, this.enemyFireScale));
+                        }
+                    } else if (type === 14) {
+                        const mid = this.height / 2;
+                        const offset = 60;
+                        const y1 = Math.min(Math.max(50, mid - offset), this.height - 50);
+                        const y2 = Math.min(Math.max(50, mid + offset), this.height - 50);
+                        this.enemies.push(new Enemy(this.width + 50, y1, type, this.enemySpeedScale, this.enemyFireScale));
+                        this.enemies.push(new Enemy(this.width + 70, y2, type, this.enemySpeedScale, this.enemyFireScale));
+                    } else {
+                        this.enemies.push(new Enemy(this.width + 50, y, type, this.enemySpeedScale, this.enemyFireScale));
                     }
-                } else if (type === 14) {
-                    const mid = this.height / 2;
-                    const offset = 60;
-                    const y1 = Math.min(Math.max(50, mid - offset), this.height - 50);
-                    const y2 = Math.min(Math.max(50, mid + offset), this.height - 50);
-                    this.enemies.push(new Enemy(this.width + 50, y1, type, this.enemySpeedScale, this.enemyFireScale));
-                    this.enemies.push(new Enemy(this.width + 70, y2, type, this.enemySpeedScale, this.enemyFireScale));
-                } else {
-                    this.enemies.push(new Enemy(this.width + 50, y, type, this.enemySpeedScale, this.enemyFireScale));
                 }
             }
         }
@@ -1751,7 +1880,13 @@ class Game {
                 const dist = Math.hypot(b.x - e.x, b.y - e.y);
                 if (dist < (e.width / 2 + 5)) {
                     b.active = false;
-                    e.hp -= 10;
+                    const dmg = 10;
+                    if (e.type === 99 && e.shieldHp > 0) {
+                        e.shieldHp = Math.max(0, e.shieldHp - dmg);
+                        this.sound.playEnemyLaser();
+                        return;
+                    }
+                    e.hp -= dmg;
                     if (e.hp <= 0) {
                         e.active = false;
                         this.score += (e.type === 99 ? 5000 : (e.type === 14 ? 500 : 100));
@@ -1811,6 +1946,9 @@ class Game {
                     this.player.maxHp = Math.round(this.player.maxHp * 1.025);
                     this.player.hp = this.player.maxHp;
                     this.sound.playPowerup();
+                } else if (it.kind === 'shield') {
+                    this.player.shieldHits = 6;
+                    this.sound.playPowerup();
                 }
             }
         });
@@ -1821,13 +1959,17 @@ class Game {
         const weaponAllowed = this.dropLimits.weapon > 0 && this.dropCounts.weapon < this.dropLimits.weapon;
         const healAllowed = this.dropCounts.heal < this.dropLimits.heal;
         const coreAllowed = this.dropCounts.core < this.dropLimits.core;
-        if (weaponAllowed && roll < 0.18) {
+        const shieldAllowed = this.dropLimits.shield > 0 && this.dropCounts.shield < this.dropLimits.shield;
+        if (weaponAllowed && roll < 0.16) {
             this.items.push(new Item(x, y, 'weapon'));
             this.dropCounts.weapon += 1;
-        } else if (healAllowed && roll < 0.32) {
+        } else if (healAllowed && roll < 0.30) {
             this.items.push(new Item(x, y, 'heal'));
             this.dropCounts.heal += 1;
-        } else if (coreAllowed && roll < 0.4) {
+        } else if (shieldAllowed && roll < 0.38) {
+            this.items.push(new Item(x, y, 'shield'));
+            this.dropCounts.shield += 1;
+        } else if (coreAllowed && roll < 0.44) {
             this.items.push(new Item(x, y, 'core'));
             this.dropCounts.core += 1;
         }
