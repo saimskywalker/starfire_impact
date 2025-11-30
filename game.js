@@ -62,29 +62,29 @@ const WEAPON_PATTERNS = [
 // --- Level Configuration ---
 const LEVEL_CONFIG = [
     { duration: 60, spawnRate: 2.6, bgSpeed: 0.5, enemies: [11], boss: 'ScrapGuardian', name: "DEBRIS BELT", enemySpeedScale: 0.75, enemyFireScale: 1.25 },
-    { duration: 60, spawnRate: 2.4, bgSpeed: 0.8, enemies: [11, 20], boss: 'RaiderCaptain', name: "ASTEROID FIELD", enemySpeedScale: 0.8, enemyFireScale: 1.2 },
+    { duration: 60, spawnRate: 2.4, bgSpeed: 0.8, enemies: [11, 20, 20], boss: 'RaiderCaptain', name: "ASTEROID FIELD", enemySpeedScale: 0.8, enemyFireScale: 1.2 },
     { duration: 60, spawnRate: 2.2, bgSpeed: 1.0, enemies: [11, 12], boss: 'IonWyrm', name: "ION NEBULA", enemySpeedScale: 0.85, enemyFireScale: 1.15 },
-    { duration: 60, spawnRate: 2.0, bgSpeed: 1.2, enemies: [11, 12, 20], boss: 'DockOverseer', name: "ORBITAL DOCK", enemySpeedScale: 0.9, enemyFireScale: 1.1 },
+    { duration: 60, spawnRate: 2.0, bgSpeed: 1.2, enemies: [11, 12, 20, 20], boss: 'DockOverseer', name: "ORBITAL DOCK", enemySpeedScale: 0.9, enemyFireScale: 1.1 },
     { duration: 60, spawnRate: 1.8, bgSpeed: 1.5, enemies: [12, 13], boss: 'MutagenCore', name: "BIO LABS", enemySpeedScale: 0.95, enemyFireScale: 1.05 },
-    { duration: 60, spawnRate: 0.9, bgSpeed: 2.0, enemies: [12, 13, 14], boss: 'RingFortress', name: "DEFENSE GRID" },
+    { duration: 60, spawnRate: 0.9, bgSpeed: 2.0, enemies: [12, 13, 14, 20, 20], boss: 'RingFortress', name: "DEFENSE GRID" },
     { duration: 60, spawnRate: 0.8, bgSpeed: 2.5, enemies: [13, 14], boss: 'WarMech', name: "FACTORY SECTOR" },
-    { duration: 60, spawnRate: 0.7, bgSpeed: 3.0, enemies: [11, 12, 13, 14], boss: 'TunnelSerpent', name: "DEEP SPACE" },
-    { duration: 60, spawnRate: 0.6, bgSpeed: 4.0, enemies: [13, 14], boss: 'CitadelAegis', name: "THE CITADEL" },
+    { duration: 60, spawnRate: 0.7, bgSpeed: 3.0, enemies: [11, 12, 13, 14, 20, 20], boss: 'TunnelSerpent', name: "DEEP SPACE" },
+    { duration: 60, spawnRate: 0.6, bgSpeed: 4.0, enemies: [13, 14, 20, 20], boss: 'CitadelAegis', name: "THE CITADEL" },
     { duration: 60, spawnRate: 0.5, bgSpeed: 5.0, enemies: [11, 12, 13, 14, 20], boss: 'CoreOvermind', name: "CORE SYSTEM" }
 ];
 
 // Backdrops per level for galaxy vistas (planets omitted for stability)
 const LEVEL_BACKGROUNDS = [
-    { gradient: ['#03030b', '#0a1841'] },
-    { gradient: ['#040912', '#13224b'] },
-    { gradient: ['#0a0f1c', '#1c2d5c'] },
-    { gradient: ['#0a0a1a', '#24163c'] },
-    { gradient: ['#0a0a12', '#1c1c3f'] },
-    { gradient: ['#050512', '#0f1f3f'] },
-    { gradient: ['#060616', '#1c1e40'] },
-    { gradient: ['#040610', '#111a34'] },
-    { gradient: ['#070b14', '#1a1b3a'] },
-    { gradient: ['#05050e', '#0c0f2c'] }
+    { gradient: ['#050510', '#0d1f3c'] },
+    { gradient: ['#080b1c', '#142a54'] },
+    { gradient: ['#0b1224', '#1d3c70'] },
+    { gradient: ['#0a0a1e', '#2b1c4a'] },
+    { gradient: ['#0a0c18', '#1f2f63'] },
+    { gradient: ['#050a1a', '#11305a'] },
+    { gradient: ['#071018', '#22325a'] },
+    { gradient: ['#060a14', '#16254a'] },
+    { gradient: ['#090f1b', '#24345c'] },
+    { gradient: ['#050711', '#122040'] }
 ];
 
 // --- Sound Manager ---
@@ -477,6 +477,16 @@ class Entity {
                 ctx.fillRect(-3, -10, 6, 20);
                 ctx.fillRect(-10, -3, 20, 6);
                 break;
+            case 32: // Core (max HP boost)
+                ctx.fillStyle = '#0e2f33';
+                ctx.beginPath();
+                ctx.moveTo(0, -14); ctx.lineTo(12, -2); ctx.lineTo(7, 14); ctx.lineTo(-7, 14); ctx.lineTo(-12, -2); ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = '#4cf5ff'; ctx.stroke();
+                ctx.fillStyle = '#4cf5ff';
+                ctx.fillRect(-3, -8, 6, 16);
+                ctx.fillRect(-8, -3, 16, 6);
+                break;
             case 99: // Boss (Generic fallback or specific drawing in Boss class)
                 ctx.fillStyle = '#ff0000';
                 ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
@@ -488,7 +498,11 @@ class Entity {
 
 class Item extends Entity {
     constructor(x, y, kind) {
-        super(x, y, 20, 20, kind === 'weapon' ? 30 : 31);
+        let typeId = 31;
+        if (kind === 'weapon') typeId = 30;
+        else if (kind === 'heal') typeId = 31;
+        else if (kind === 'core') typeId = 32;
+        super(x, y, 20, 20, typeId);
         this.kind = kind;
         this.vx = -ENEMY_BASE_SPEED * 0.6;
         this.rotation = 0;
@@ -646,7 +660,7 @@ class Asteroid extends Entity {
             ? { radius: 55 + Math.random() * 30, hp: 90, speed: 0.65 }     // Large chunks
             : roll > 0.3
                 ? { radius: 30 + Math.random() * 18, hp: 60, speed: 0.85 }  // Medium rocks
-                : { radius: 12 + Math.random() * 10, hp: 30, speed: 1.2 }; // Small debris
+                : { radius: 12 + Math.random() * 10, hp: 30, speed: 2.0 }; // Small debris (fast, bullet-like)
 
         const sizeJitter = 0.75 + Math.random() * 0.5;
         const diameter = config.radius * 2 * sizeJitter;
@@ -754,23 +768,16 @@ class Boss extends Entity {
             ctx.drawImage(game.sprites.boss3, -80, -80);
         } else if ((this.name === 'MutagenCore' || this.name === 'RingFortress') && game?.sprites?.boss4) {
             ctx.drawImage(game.sprites.boss4, -80, -80);
-            if (game?.sprites?.boss4Overlay) {
-                const overlay = game.sprites.boss4Overlay;
-                const t = Date.now() / 1000;
-                const wobble = Math.sin(t * 1.4) * 3;
-                const scale = 1 + Math.sin(t * 0.9) * 0.04;
-                ctx.save();
-                ctx.globalCompositeOperation = 'lighter';
-                ctx.globalAlpha = 0.9;
-                ctx.translate(wobble, wobble);
-                ctx.scale(scale, scale);
-                ctx.drawImage(overlay, -overlay.width / 2, -overlay.height / 2);
-                ctx.restore();
-            }
-        } else if ((this.name === 'WarMech' || this.name === 'TunnelSerpent') && game?.sprites?.boss5) {
+        } else if (this.name === 'WarMech' && game?.sprites?.boss5) {
             ctx.drawImage(game.sprites.boss5, -80, -80);
+        } else if (this.name === 'TunnelSerpent' && game?.sprites?.boss7) {
+            ctx.drawImage(game.sprites.boss7, -80, -80);
         } else if ((this.name === 'CitadelAegis' || this.name === 'CoreOvermind') && game?.sprites?.boss6) {
+            const rot = Math.sin(Date.now() * 0.002) * 0.4 + this.spin * 0.25;
+            ctx.save();
+            ctx.rotate(rot);
             ctx.drawImage(game.sprites.boss6, -80, -80);
+            ctx.restore();
         } else if (this.name === 'ScrapGuardian') {
             // Central eye with four writhing limbs
             ctx.beginPath();
@@ -914,6 +921,13 @@ class Boss extends Entity {
     }
 
     // Behaviors
+    applyBoss6Strafe() {
+        if (this.name !== 'CitadelAegis' && this.name !== 'CoreOvermind') return;
+        const anchorX = game.width - 150;
+        const swing = game.width * 0.35;
+        this.x = anchorX - Math.sin(this.spin * 0.6) * swing;
+    }
+
     behaviorBasic(dt) {
         this.y += 50 * this.dirY * dt;
         if (this.y > game.height - 80) this.dirY = -1;
@@ -998,23 +1012,34 @@ class Boss extends Entity {
     }
 
     behaviorSweep(dt) {
-        this.y += 150 * this.dirY * dt; // Fast
-        if (this.y > game.height - 50) this.dirY = -1;
-        if (this.y < 50) this.dirY = 1;
+        // WarMech patrol: sinusoidal vertical sweep (35% of screen)
+        const amp = game.height * 0.35;
+        this.y = game.height / 2 + Math.sin(this.spin * 0.8) * amp;
 
-        const late = game.levelIndex >= 5;
-        const cadence = late ? 0.6 : 1.0;
+        const cadence = 1.6;
         if (this.timer > cadence) {
             this.timer = 0;
+            const spacing = 32;
+            const startOffset = -((6 - 1) / 2) * spacing;
+            for (let i = 0; i < 6; i++) {
+                const offset = startOffset + i * spacing;
+                game.enemies.push(new Enemy(this.x - 60, this.y + offset, 13, game.enemySpeedScale * 1.1, game.enemyFireScale));
+            }
+            // Also fire a aimed spread while launching escorts
             const aim = (game.player.y - this.y) / 260;
-            for (let i = -1; i <= 1; i++) {
-                game.bullets.push(new Bullet(this.x, this.y, -0.75, aim + i * 0.18, 'enemy'));
-            }
-            if (late) {
-                // Flanking diagonal shots
-                game.bullets.push(new Bullet(this.x, this.y, -0.6, aim + 0.32, 'enemy'));
-                game.bullets.push(new Bullet(this.x, this.y, -0.6, aim - 0.32, 'enemy'));
-            }
+            game.bullets.push(new Bullet(this.x, this.y, -0.8, aim, 'enemy'));
+            game.bullets.push(new Bullet(this.x, this.y, -0.78, aim + 0.22, 'enemy'));
+            game.bullets.push(new Bullet(this.x, this.y, -0.78, aim - 0.22, 'enemy'));
+            game.sound.playEnemyLaser();
+        }
+
+        // Periodic tank reinforcements down the middle
+        if (this.burstTimer > 5) {
+            this.burstTimer = 0;
+            const mid = game.height / 2;
+            const offset = 60;
+            game.enemies.push(new Enemy(this.x - 70, Math.max(50, mid - offset), 14, game.enemySpeedScale, game.enemyFireScale));
+            game.enemies.push(new Enemy(this.x - 70, Math.min(game.height - 50, mid + offset), 14, game.enemySpeedScale, game.enemyFireScale));
         }
     }
 
@@ -1046,6 +1071,7 @@ class Boss extends Entity {
     behaviorShield(dt) {
         // High HP, slow shots
         const late = game.levelIndex >= 5;
+        this.applyBoss6Strafe();
         this.y = game.height / 2 + Math.sin(Date.now() / 1200) * 90;
         const interval = late ? 1.1 : 2.0;
         if (this.timer > interval) {
@@ -1061,6 +1087,7 @@ class Boss extends Entity {
 
     behaviorBulletHell(dt) {
         // Final Boss
+        this.applyBoss6Strafe();
         this.y = game.height / 2 + Math.sin(Date.now() / 1000) * 100;
         const interval = game.levelIndex >= 5 ? 0.08 : 0.1;
         if (this.timer > interval) {
@@ -1089,7 +1116,7 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.width = this.canvas.width = window.innerWidth;
         this.height = this.canvas.height = window.innerHeight;
-        this.sprites = { player: null, playerBullet: null, enemyBullet: null, weaponUpgrade: null, heal: null, scout: null, fighter: null, interceptor: null, tank: null, boss1: null, boss2: null, boss3: null, boss4: null, boss5: null, boss6: null, boss4Overlay: null, asteroids: [] };
+        this.sprites = { player: null, playerBullet: null, enemyBullet: null, weaponUpgrade: null, heal: null, scout: null, fighter: null, interceptor: null, tank: null, boss1: null, boss2: null, boss3: null, boss4: null, boss5: null, boss6: null, boss7: null, asteroids: [] };
 
         this.sound = new SoundManager();
         this.input = new InputHandler();
@@ -1099,11 +1126,12 @@ class Game {
         this.enemies = [];
         this.items = [];
         this.stars = [];
-        this.dropCounts = { weapon: 0, heal: 0 };
-        this.dropLimits = { weapon: 3, heal: 5 };
+        this.dropCounts = { weapon: 0, heal: 0, core: 0 };
+        this.dropLimits = { weapon: 3, heal: 5, core: 1 };
         this.playerHitCounter = 0;
         this.hitsPerWeaponDowngrade = 3;
         this.playerHitCooldown = 0; // brief invuln window to avoid double-counting hits
+        this.asteroidTimer = 0;
 
         // Init Stars
         for (let i = 0; i < 150; i++) {
@@ -1119,9 +1147,11 @@ class Game {
             start: document.getElementById('start-screen'),
             startBtn: document.getElementById('start-button'),
             hud: document.getElementById('hud'),
+            version: document.getElementById('version-tag'),
             score: document.getElementById('score'),
             level: document.getElementById('level'),
             hp: document.getElementById('health-fill'),
+            healthBar: document.getElementById('health-bar'),
             progress: document.getElementById('level-progress-fill'),
             label: document.getElementById('level-progress-label'),
             bossBar: document.getElementById('boss-bar'),
@@ -1173,7 +1203,7 @@ class Game {
         this.loadBoss4Sprite();
         this.loadBoss5Sprite();
         this.loadBoss6Sprite();
-        this.loadBoss4Overlay();
+        this.loadBoss7Sprite();
         requestAnimationFrame(t => this.loop(t));
     }
 
@@ -1236,7 +1266,7 @@ class Game {
         const img = new Image();
         img.src = 'assets/upgrade weapon.png';
         img.onload = () => {
-            const size = 40;
+            const size = 44; // Slightly larger to stand out
             const scaled = document.createElement('canvas');
             scaled.width = size;
             scaled.height = size;
@@ -1252,7 +1282,7 @@ class Game {
 
     loadHealSprite() {
         const img = new Image();
-        img.src = 'assets/heal.png';
+        img.src = 'assets/heall.png';
         img.onload = () => {
             const size = 40;
             const scaled = document.createElement('canvas');
@@ -1472,11 +1502,11 @@ class Game {
         img.onerror = (e) => console.error('Failed to load boss sprite', e);
     }
 
-    loadBoss4Overlay() {
+    loadBoss7Sprite() {
         const img = new Image();
-        img.src = 'assets/boss4_overlay.png';
+        img.src = 'assets/boss level 7.png';
         img.onload = () => {
-            const size = 160; // overlay covers boss silhouette
+            const size = 150; // Boss hitbox 100, allow larger silhouette
             const scaled = document.createElement('canvas');
             scaled.width = size;
             scaled.height = size;
@@ -1485,15 +1515,16 @@ class Game {
             const w = img.width * scale;
             const h = img.height * scale;
             ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
-            this.sprites.boss4Overlay = scaled;
+            this.sprites.boss7 = scaled;
         };
-        img.onerror = (e) => console.error('Failed to load boss overlay sprite', e);
+        img.onerror = (e) => console.error('Failed to load boss sprite', e);
     }
 
     start() {
         if (this.isRunning) return;
         this.isRunning = true;
         this.ui.start.classList.add('hidden');
+        if (this.ui.version) this.ui.version.classList.add('hidden');
         this.ui.hud.classList.remove('hidden');
         this.score = 0;
         this.levelIndex = 0;
@@ -1519,6 +1550,7 @@ class Game {
         this.player.y = this.height / 2;
         this.player.lastShoot = 0;
         this.spawnTimer = 0;
+        this.asteroidTimer = 0;
         this.playerHitCounter = 0;
         this.playerHitCooldown = 0;
         const config = LEVEL_CONFIG[this.levelIndex];
@@ -1529,9 +1561,10 @@ class Game {
         this.ui.label.style.color = "#ff0";
         if (this.ui.bossBar) this.ui.bossBar.classList.add('hidden');
         // Reset drop counters and limits per level
-        this.dropCounts = { weapon: 0, heal: 0 };
+        this.dropCounts = { weapon: 0, heal: 0, core: 0 };
         this.dropLimits.weapon = 3;
         this.dropLimits.heal = 3;
+        this.dropLimits.core = 1;
 
         // Show overlay
         this.sound.playMusic('level');
@@ -1557,6 +1590,10 @@ class Game {
         if (this.playerHitCounter % this.hitsPerWeaponDowngrade === 0) this.player.downgradeWeapon();
         this.playerHitCooldown = 0.25; // short grace period to avoid multiple hits in the same moment
         if (this.player.hp <= 0) this.gameOver();
+    }
+
+    isAsteroidHeavyLevel() {
+        return [1, 3, 5, 7, 8].includes(this.levelIndex);
     }
 
     update(dt) {
@@ -1589,6 +1626,17 @@ class Game {
 
         // Spawner
         if (!this.bossSpawned) {
+            if (this.isAsteroidHeavyLevel()) {
+                this.asteroidTimer += dt;
+                if (this.asteroidTimer > 1.3) {
+                    this.asteroidTimer = 0;
+                    const ay = Math.random() * (this.height - 80) + 40;
+                    this.enemies.push(new Asteroid(this.width + 80, ay));
+                }
+            } else {
+                this.asteroidTimer = 0;
+            }
+
             this.spawnTimer += dt;
             if (this.spawnTimer > config.spawnRate) {
                 this.spawnTimer = 0;
@@ -1640,6 +1688,9 @@ class Game {
 
         // HUD
         this.ui.score.innerText = 'SCORE: ' + this.score.toString().padStart(6, '0');
+        const baseHealthWidth = 220;
+        const healthScale = Math.min(1.6, this.player.maxHp / 100); // allow up to 60% wider bar
+        if (this.ui.healthBar) this.ui.healthBar.style.width = (baseHealthWidth * healthScale) + 'px';
         this.ui.hp.style.width = Math.max(0, (this.player.hp / this.player.maxHp) * 100) + '%';
         const boss = this.enemies.find(e => e.type === 99);
         if (boss && this.ui.bossBar) {
@@ -1661,6 +1712,20 @@ class Game {
         grad.addColorStop(0, bg.gradient[0]);
         grad.addColorStop(1, bg.gradient[1]);
         this.ctx.fillStyle = grad;
+        this.ctx.fillRect(0, 0, this.width, this.height);
+
+        // Nebula film overlay
+        const nebula = this.ctx.createLinearGradient(0, 0, this.width, this.height);
+        nebula.addColorStop(0, 'rgba(120, 40, 140, 0.15)');
+        nebula.addColorStop(0.5, 'rgba(20, 180, 220, 0.12)');
+        nebula.addColorStop(1, 'rgba(255, 180, 90, 0.1)');
+        this.ctx.fillStyle = nebula;
+        this.ctx.fillRect(0, 0, this.width, this.height);
+
+        const vignette = this.ctx.createRadialGradient(this.width / 2, this.height / 2, this.width * 0.1, this.width / 2, this.height / 2, this.width * 0.7);
+        vignette.addColorStop(0, 'rgba(0,0,0,0)');
+        vignette.addColorStop(1, 'rgba(0,0,0,0.4)');
+        this.ctx.fillStyle = vignette;
         this.ctx.fillRect(0, 0, this.width, this.height);
 
         // Draw Stars
@@ -1742,6 +1807,10 @@ class Game {
                 } else if (it.kind === 'heal') {
                     this.player.hp = Math.min(this.player.maxHp, this.player.hp + 40);
                     this.sound.playPowerup();
+                } else if (it.kind === 'core') {
+                    this.player.maxHp = Math.round(this.player.maxHp * 1.025);
+                    this.player.hp = this.player.maxHp;
+                    this.sound.playPowerup();
                 }
             }
         });
@@ -1751,12 +1820,16 @@ class Game {
         const roll = Math.random();
         const weaponAllowed = this.dropLimits.weapon > 0 && this.dropCounts.weapon < this.dropLimits.weapon;
         const healAllowed = this.dropCounts.heal < this.dropLimits.heal;
+        const coreAllowed = this.dropCounts.core < this.dropLimits.core;
         if (weaponAllowed && roll < 0.18) {
             this.items.push(new Item(x, y, 'weapon'));
             this.dropCounts.weapon += 1;
         } else if (healAllowed && roll < 0.32) {
             this.items.push(new Item(x, y, 'heal'));
             this.dropCounts.heal += 1;
+        } else if (coreAllowed && roll < 0.4) {
+            this.items.push(new Item(x, y, 'core'));
+            this.dropCounts.core += 1;
         }
     }
 

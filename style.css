@@ -40,6 +40,7 @@ canvas {
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    background: radial-gradient(circle at 20% 20%, rgba(0, 255, 255, 0.05), transparent 32%), radial-gradient(circle at 80% 30%, rgba(255, 0, 140, 0.05), transparent 30%);
 }
 
 .hidden {
@@ -53,13 +54,31 @@ canvas {
 
 #start-screen {
     text-align: center;
-    background: radial-gradient(circle at 30% 30%, rgba(0, 200, 255, 0.25), transparent 45%), radial-gradient(circle at 70% 50%, rgba(255, 0, 120, 0.25), transparent 40%), rgba(5, 8, 24, 0.85);
-    padding: 28px 36px;
-    border: 2px solid #0ff;
-    box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
+    background: linear-gradient(145deg, rgba(6, 10, 26, 0.95), rgba(14, 34, 74, 0.9));
+    padding: 32px 42px 46px;
+    border: 2px solid #4df5ff;
+    box-shadow: 0 0 35px rgba(0, 255, 255, 0.35), 0 20px 60px rgba(0, 0, 0, 0.55);
     pointer-events: auto;
     /* Enable clicking on start screen */
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(8px);
+    position: relative;
+    overflow: hidden;
+}
+
+#start-screen::before,
+#start-screen::after {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    pointer-events: none;
+}
+
+#start-screen::after {
+    inset: 0;
+    background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(0deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mix-blend-mode: screen;
 }
 
 #hud {
@@ -104,21 +123,78 @@ p {
     background: linear-gradient(120deg, rgba(0, 200, 255, 0.15), rgba(255, 0, 150, 0.15));
 }
 
+.start-badges {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 10px 0 6px;
+}
+
+.badge {
+    padding: 6px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.06);
+    color: #c8f6ff;
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 1px;
+    box-shadow: 0 0 12px rgba(0, 255, 255, 0.12);
+}
+
+.badge-primary { border-color: #00f5ff; color: #00f5ff; }
+.badge-secondary { border-color: #ff7af6; color: #ffb7ff; }
+.badge-accent { border-color: #ffe066; color: #ffe8aa; }
+
+.tagline {
+    font-size: 14px;
+    color: #e5f9ff;
+    margin: 12px 0 18px;
+    line-height: 1.5;
+}
+
+.version-tag {
+    position: absolute;
+    bottom: 14px;
+    left: 16px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: #c8f6ff;
+    text-shadow: 0 0 10px rgba(200, 246, 255, 0.6);
+    opacity: 0.9;
+    pointer-events: none;
+}
+
 #start-button {
     font-family: 'Press Start 2P', cursive;
-    font-size: 14px;
-    padding: 14px 26px;
-    background: linear-gradient(90deg, #00f5ff, #ff00b3);
+    font-size: 15px;
+    padding: 16px 30px;
+    background: linear-gradient(120deg, #00f5ff 0%, #ff00b3 50%, #ffe066 100%);
     color: #0a0a0a;
-    border: none;
-    box-shadow: 0 0 18px rgba(0, 245, 255, 0.6);
+    border: 1px solid #ffffff;
+    box-shadow: 0 0 18px rgba(0, 245, 255, 0.6), 0 12px 28px rgba(0, 0, 0, 0.4);
     cursor: pointer;
     margin: 12px 0;
+    text-transform: uppercase;
 }
 
 #start-button:active {
     transform: translateY(2px);
     box-shadow: 0 0 10px rgba(0, 245, 255, 0.4);
+}
+
+.controls {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: #bfe8ff;
+    margin: 10px 0 4px;
+    text-transform: uppercase;
+}
+
+.hint {
+    margin-top: 10px;
 }
 
 @keyframes blinker {
@@ -155,23 +231,29 @@ p {
 }
 
 #level-progress-label {
-    font-size: 10px;
-    margin-bottom: 4px;
-    color: #ff0;
+    font-size: 11px;
+    margin-bottom: 6px;
+    color: #9ff8ff;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(159, 248, 255, 0.6);
 }
 
 #level-progress-bar {
     width: 100%;
-    height: 10px;
-    border: 1px solid #fff;
-    background: #222;
+    height: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.05), transparent 45%), linear-gradient(90deg, rgba(12, 20, 40, 0.9), rgba(8, 12, 24, 0.95));
+    border-radius: 12px;
+    box-shadow: inset 0 0 14px rgba(0, 255, 255, 0.2), 0 0 10px rgba(0, 255, 255, 0.12);
+    overflow: hidden;
 }
 
 #level-progress-fill {
     width: 0%;
     height: 100%;
-    background: #f00;
-    transition: width 0.2s;
+    background: linear-gradient(90deg, #6ef7ff 0%, #7cf0d6 45%, #f7ff9a 100%);
+    box-shadow: 0 0 14px rgba(111, 247, 255, 0.45);
+    transition: width 0.25s ease-out;
 }
 
 .hud-bottom {
@@ -182,45 +264,54 @@ p {
 }
 
 #health-bar {
-    width: 200px;
-    height: 20px;
-    border: 2px solid #fff;
-    background: #333;
+    width: auto;
+    min-width: 220px;
+    height: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: linear-gradient(120deg, rgba(12, 28, 20, 0.9), rgba(8, 16, 10, 0.95));
+    border-radius: 14px;
+    box-shadow: inset 0 0 14px rgba(0, 255, 128, 0.25), 0 0 14px rgba(0, 255, 128, 0.16);
+    overflow: hidden;
 }
 
 #health-fill {
     width: 100%;
     height: 100%;
-    background: #0f0;
-    transition: width 0.2s;
+    background: linear-gradient(90deg, #5afc8f 0%, #3efca2 50%, #c8ffd6 100%);
+    box-shadow: 0 0 14px rgba(90, 252, 143, 0.55);
+    transition: width 0.25s ease-out;
 }
 
 #boss-bar {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 6px;
-    min-width: 240px;
+    gap: 8px;
+    min-width: 280px;
 }
 
 #boss-label {
-    font-size: 10px;
-    color: #ff6688;
-    text-shadow: 0 0 8px rgba(255, 102, 136, 0.6);
+    font-size: 11px;
+    color: #ffc0e0;
+    text-shadow: 0 0 10px rgba(255, 192, 224, 0.7);
     text-align: right;
+    letter-spacing: 1px;
 }
 
 #boss-bar-track {
-    width: 240px;
-    height: 12px;
-    border: 2px solid #ff6688;
-    background: rgba(20, 0, 20, 0.6);
-    box-shadow: 0 0 12px rgba(255, 102, 136, 0.4);
+    width: 280px;
+    height: 14px;
+    border: 1px solid rgba(255, 70, 140, 0.65);
+    background: linear-gradient(90deg, rgba(45, 6, 26, 0.9), rgba(24, 3, 16, 0.9));
+    box-shadow: inset 0 0 16px rgba(255, 70, 140, 0.35), 0 0 18px rgba(255, 70, 140, 0.22);
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 #boss-bar-fill {
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, #ff0044, #ffcc66);
-    transition: width 0.15s;
+    background: linear-gradient(90deg, #ff3e6b 0%, #ff9f43 50%, #ffe28a 100%);
+    box-shadow: 0 0 16px rgba(255, 62, 107, 0.45);
+    transition: width 0.2s ease-out;
 }
