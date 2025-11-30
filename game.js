@@ -406,6 +406,11 @@ class Entity {
                 ctx.fillRect(-6, -3, 12, 6);
                 break;
             case 6: // Enemy Bullet
+                if (game?.sprites?.enemyBullet) {
+                    const sprite = game.sprites.enemyBullet;
+                    ctx.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
+                    break;
+                }
                 ctx.fillStyle = '#ff00ff';
                 ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
                 break;
@@ -441,7 +446,7 @@ class Entity {
                 ctx.fillStyle = '#aa4400';
                 ctx.fillRect(-20, -20, 40, 40);
                 break;
-            case 20: // Asteroid
+            case 20: // Asteroid (fallback)
                 ctx.fillStyle = '#888';
                 ctx.beginPath();
                 ctx.moveTo(-15, -10); ctx.lineTo(0, -15); ctx.lineTo(15, -10); ctx.lineTo(20, 0);
@@ -449,6 +454,11 @@ class Entity {
                 ctx.closePath(); ctx.fill(); ctx.stroke();
                 break;
             case 30: // Weapon Upgrade
+                if (game?.sprites?.weaponUpgrade) {
+                    const sprite = game.sprites.weaponUpgrade;
+                    ctx.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
+                    break;
+                }
                 ctx.fillStyle = '#44ff88';
                 ctx.beginPath();
                 ctx.moveTo(0, -12); ctx.lineTo(10, 0); ctx.lineTo(0, 12); ctx.lineTo(-10, 0);
@@ -456,6 +466,11 @@ class Entity {
                 ctx.strokeStyle = '#0f0'; ctx.stroke();
                 break;
             case 31: // Heal
+                if (game?.sprites?.heal) {
+                    const sprite = game.sprites.heal;
+                    ctx.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
+                    break;
+                }
                 ctx.fillStyle = '#ff4444';
                 ctx.fillRect(-10, -10, 20, 20);
                 ctx.fillStyle = '#fff';
@@ -615,10 +630,8 @@ class Enemy extends Entity {
             this.fireTimer = 0;
             const aim = straightShots ? 0 : (game.player.y - this.y) / 300;
             game.bullets.push(new Bullet(this.x, this.y, -0.65, aim, 'enemy'));
-            game.bullets.push(new Bullet(this.x, this.y, -0.65, aim + 0.18, 'enemy'));
-            game.bullets.push(new Bullet(this.x, this.y, -0.65, aim - 0.18, 'enemy'));
-            game.bullets.push(new Bullet(this.x, this.y, -0.65, aim + 0.36, 'enemy'));
-            game.bullets.push(new Bullet(this.x, this.y, -0.65, aim - 0.36, 'enemy'));
+            game.bullets.push(new Bullet(this.x, this.y, -0.65, aim + 0.22, 'enemy'));
+            game.bullets.push(new Bullet(this.x, this.y, -0.65, aim - 0.22, 'enemy'));
             game.sound.playEnemyLaser();
         }
 
@@ -635,11 +648,16 @@ class Asteroid extends Entity {
                 ? { radius: 30 + Math.random() * 18, hp: 60, speed: 0.85 }  // Medium rocks
                 : { radius: 12 + Math.random() * 10, hp: 30, speed: 1.2 }; // Small debris
 
-        super(x, y, config.radius * 2, config.radius * 2, 20);
+        const sizeJitter = 0.75 + Math.random() * 0.5;
+        const diameter = config.radius * 2 * sizeJitter;
+        super(x, y, diameter, diameter, 20);
         this.hp = config.hp;
         this.speedScale = config.speed;
         this.rotSpeed = (Math.random() - 0.5) * 2.2;
-        this.points = this.generatePoints(config.radius);
+        this.visualSize = diameter;
+        const pool = game?.sprites?.asteroids || [];
+        this.spriteIndex = pool.length ? Math.floor(Math.random() * pool.length) : -1;
+        this.points = this.generatePoints(config.radius); // fallback outline
     }
 
     generatePoints(radius) {
@@ -655,21 +673,30 @@ class Asteroid extends Entity {
     }
 
     draw(ctx) {
-        if (!this.active || !this.points?.length) return;
+        if (!this.active) return;
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.rotation);
-        ctx.fillStyle = '#888';
-        ctx.strokeStyle = '#bbb';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(this.points[0].x, this.points[0].y);
-        for (let i = 1; i < this.points.length; i++) {
-            ctx.lineTo(this.points[i].x, this.points[i].y);
+        const sprites = game?.sprites?.asteroids;
+        const sprite = (sprites && this.spriteIndex >= 0) ? sprites[this.spriteIndex] : null;
+        if (sprite) {
+            const ratio = sprite.width / sprite.height;
+            const drawW = ratio >= 1 ? this.visualSize : this.visualSize * ratio;
+            const drawH = ratio >= 1 ? this.visualSize / ratio : this.visualSize;
+            ctx.drawImage(sprite, -drawW / 2, -drawH / 2, drawW, drawH);
+        } else if (this.points?.length) {
+            ctx.fillStyle = '#888';
+            ctx.strokeStyle = '#bbb';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(this.points[0].x, this.points[0].y);
+            for (let i = 1; i < this.points.length; i++) {
+                ctx.lineTo(this.points[i].x, this.points[i].y);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
         }
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
         ctx.restore();
     }
 
@@ -690,6 +717,8 @@ class Boss extends Entity {
         this.timer = 0;
         this.phase = 0;
         this.dirY = 1;
+        this.burstTimer = 0; // secondary timer for advanced patterns
+        this.spin = 0;       // used for rotating volleys
     }
 
     draw(ctx) {
@@ -702,9 +731,46 @@ class Boss extends Entity {
         ctx.strokeStyle = '#f8b4c4';
         ctx.lineWidth = 3;
         if (this.name === 'ScrapGuardian' && game?.sprites?.boss1) {
+            const t = Date.now() / 1000;
+            const wobble = Math.sin(t * 2.1) * 4;
+            const scale = 1 + Math.sin(t * 1.3) * 0.03;
+            ctx.save();
+            ctx.rotate(Math.sin(t * 1.7) * 0.06);
+            ctx.translate(wobble, wobble * 0.6);
+            ctx.scale(scale, scale);
             ctx.drawImage(game.sprites.boss1, -70, -70);
+            ctx.restore();
         } else if (this.name === 'RaiderCaptain' && game?.sprites?.boss2) {
+            const t = Date.now() / 1000;
+            const sway = Math.sin(t * 1.8) * 6;
+            const bob = Math.sin(t * 1.2) * 4;
+            const scale = 1 + Math.sin(t * 1.5) * 0.025;
+            ctx.save();
+            ctx.translate(sway, bob);
+            ctx.scale(scale, scale);
             ctx.drawImage(game.sprites.boss2, -70, -70);
+            ctx.restore();
+        } else if ((this.name === 'IonWyrm' || this.name === 'DockOverseer') && game?.sprites?.boss3) {
+            ctx.drawImage(game.sprites.boss3, -80, -80);
+        } else if ((this.name === 'MutagenCore' || this.name === 'RingFortress') && game?.sprites?.boss4) {
+            ctx.drawImage(game.sprites.boss4, -80, -80);
+            if (game?.sprites?.boss4Overlay) {
+                const overlay = game.sprites.boss4Overlay;
+                const t = Date.now() / 1000;
+                const wobble = Math.sin(t * 1.4) * 3;
+                const scale = 1 + Math.sin(t * 0.9) * 0.04;
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.globalAlpha = 0.9;
+                ctx.translate(wobble, wobble);
+                ctx.scale(scale, scale);
+                ctx.drawImage(overlay, -overlay.width / 2, -overlay.height / 2);
+                ctx.restore();
+            }
+        } else if ((this.name === 'WarMech' || this.name === 'TunnelSerpent') && game?.sprites?.boss5) {
+            ctx.drawImage(game.sprites.boss5, -80, -80);
+        } else if ((this.name === 'CitadelAegis' || this.name === 'CoreOvermind') && game?.sprites?.boss6) {
+            ctx.drawImage(game.sprites.boss6, -80, -80);
         } else if (this.name === 'ScrapGuardian') {
             // Central eye with four writhing limbs
             ctx.beginPath();
@@ -822,6 +888,8 @@ class Boss extends Entity {
 
     update(dt) {
         this.timer += dt;
+        this.burstTimer += dt;
+        this.spin += dt;
 
         // Entrance
         if (this.x > game.width - 150) {
@@ -904,13 +972,28 @@ class Boss extends Entity {
     }
 
     behaviorRing(dt) {
-        if (this.timer > 2.5) {
+        const late = game.levelIndex >= 5;
+        // Hover and sway near center
+        this.y = game.height / 2 + Math.sin(Date.now() / 700) * 120;
+
+        const interval = late ? 1.2 : 2.5;
+        if (this.timer > interval) {
             this.timer = 0;
-            for (let i = 0; i < 8; i++) {
-                const angle = (i / 8) * Math.PI * 2;
-                game.bullets.push(new Bullet(this.x, this.y, Math.cos(angle) * 0.5, Math.sin(angle) * 0.5, 'enemy'));
+            const count = late ? 16 : 8;
+            const spin = this.spin * 3;
+            for (let i = 0; i < count; i++) {
+                const angle = spin + (i / count) * Math.PI * 2;
+                const speed = 0.5 + (late ? 0.1 : 0);
+                game.bullets.push(new Bullet(this.x, this.y, Math.cos(angle) * speed, Math.sin(angle) * speed, 'enemy'));
             }
             game.sound.playEnemyLaser();
+            if (late) {
+                // Add aimed tri-shot to punish idle positions
+                const aim = (game.player.y - this.y) / 280;
+                game.bullets.push(new Bullet(this.x, this.y, -0.65, aim, 'enemy'));
+                game.bullets.push(new Bullet(this.x, this.y, -0.65, aim + 0.18, 'enemy'));
+                game.bullets.push(new Bullet(this.x, this.y, -0.65, aim - 0.18, 'enemy'));
+            }
         }
     }
 
@@ -919,36 +1002,82 @@ class Boss extends Entity {
         if (this.y > game.height - 50) this.dirY = -1;
         if (this.y < 50) this.dirY = 1;
 
-        if (Math.random() < 0.05) {
-            game.bullets.push(new Bullet(this.x, this.y, -0.7, 0, 'enemy'));
+        const late = game.levelIndex >= 5;
+        const cadence = late ? 0.6 : 1.0;
+        if (this.timer > cadence) {
+            this.timer = 0;
+            const aim = (game.player.y - this.y) / 260;
+            for (let i = -1; i <= 1; i++) {
+                game.bullets.push(new Bullet(this.x, this.y, -0.75, aim + i * 0.18, 'enemy'));
+            }
+            if (late) {
+                // Flanking diagonal shots
+                game.bullets.push(new Bullet(this.x, this.y, -0.6, aim + 0.32, 'enemy'));
+                game.bullets.push(new Bullet(this.x, this.y, -0.6, aim - 0.32, 'enemy'));
+            }
         }
     }
 
     behaviorSnake(dt) {
         this.x = (game.width - 100) + Math.sin(Date.now() / 1000) * 50;
         this.y = game.height / 2 + Math.cos(Date.now() / 800) * 150;
-        if (this.timer > 0.2) {
+        const late = game.levelIndex >= 5;
+        const interval = late ? 0.15 : 0.2;
+        if (this.timer > interval) {
             this.timer = 0;
-            game.bullets.push(new Bullet(this.x, this.y, -0.5, (Math.random() - 0.5), 'enemy'));
+            const spread = late ? 0.35 : 0.25;
+            const base = (game.player.y - this.y) / 280;
+            game.bullets.push(new Bullet(this.x, this.y, -0.55, base, 'enemy'));
+            game.bullets.push(new Bullet(this.x, this.y, -0.55, base + spread, 'enemy'));
+            game.bullets.push(new Bullet(this.x, this.y, -0.55, base - spread, 'enemy'));
+        }
+        if (late && this.burstTimer > 1.6) {
+            this.burstTimer = 0;
+            // Radial mini-burst
+            const spin = this.spin * 4;
+            for (let i = 0; i < 8; i++) {
+                const angle = spin + (i / 8) * Math.PI * 2;
+                game.bullets.push(new Bullet(this.x, this.y, Math.cos(angle) * 0.45, Math.sin(angle) * 0.45, 'enemy'));
+            }
+            game.sound.playEnemyLaser();
         }
     }
 
     behaviorShield(dt) {
         // High HP, slow shots
-        if (this.timer > 2.0) {
+        const late = game.levelIndex >= 5;
+        this.y = game.height / 2 + Math.sin(Date.now() / 1200) * 90;
+        const interval = late ? 1.1 : 2.0;
+        if (this.timer > interval) {
             this.timer = 0;
-            game.bullets.push(new Bullet(this.x, this.y, -0.4, 0, 'enemy'));
+            const aim = (game.player.y - this.y) / 320;
+            game.bullets.push(new Bullet(this.x, this.y, -0.45, aim, 'enemy'));
+            if (late) {
+                game.bullets.push(new Bullet(this.x, this.y - 50, -0.5, aim - 0.18, 'enemy'));
+                game.bullets.push(new Bullet(this.x, this.y + 50, -0.5, aim + 0.18, 'enemy'));
+            }
         }
     }
 
     behaviorBulletHell(dt) {
         // Final Boss
         this.y = game.height / 2 + Math.sin(Date.now() / 1000) * 100;
-        if (this.timer > 0.1) {
+        const interval = game.levelIndex >= 5 ? 0.08 : 0.1;
+        if (this.timer > interval) {
             this.timer = 0;
             const angle = (Date.now() / 500);
             game.bullets.push(new Bullet(this.x, this.y, Math.cos(angle) * 0.6, Math.sin(angle) * 0.6, 'enemy'));
             game.bullets.push(new Bullet(this.x, this.y, Math.cos(angle + Math.PI) * 0.6, Math.sin(angle + Math.PI) * 0.6, 'enemy'));
+        }
+        if (this.burstTimer > 1.2) {
+            this.burstTimer = 0;
+            const count = 18;
+            const spin = this.spin * 2;
+            for (let i = 0; i < count; i++) {
+                const ang = spin + (i / count) * Math.PI * 2;
+                game.bullets.push(new Bullet(this.x, this.y, Math.cos(ang) * 0.55, Math.sin(ang) * 0.55, 'enemy'));
+            }
+            game.sound.playEnemyLaser();
         }
     }
 }
@@ -960,7 +1089,7 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.width = this.canvas.width = window.innerWidth;
         this.height = this.canvas.height = window.innerHeight;
-        this.sprites = { player: null, playerBullet: null, scout: null, fighter: null, interceptor: null, tank: null, boss1: null, boss2: null };
+        this.sprites = { player: null, playerBullet: null, enemyBullet: null, weaponUpgrade: null, heal: null, scout: null, fighter: null, interceptor: null, tank: null, boss1: null, boss2: null, boss3: null, boss4: null, boss5: null, boss6: null, boss4Overlay: null, asteroids: [] };
 
         this.sound = new SoundManager();
         this.input = new InputHandler();
@@ -971,7 +1100,10 @@ class Game {
         this.items = [];
         this.stars = [];
         this.dropCounts = { weapon: 0, heal: 0 };
-        this.dropLimits = { weapon: 0, heal: 5 };
+        this.dropLimits = { weapon: 3, heal: 5 };
+        this.playerHitCounter = 0;
+        this.hitsPerWeaponDowngrade = 3;
+        this.playerHitCooldown = 0; // brief invuln window to avoid double-counting hits
 
         // Init Stars
         for (let i = 0; i < 150; i++) {
@@ -1027,12 +1159,21 @@ class Game {
 
         this.loadPlayerSprite();
         this.loadPlayerBulletSprite();
+        this.loadEnemyBulletSprite();
+        this.loadWeaponUpgradeSprite();
+        this.loadHealSprite();
+        this.loadAsteroidSprites();
         this.loadScoutSprite();
         this.loadFighterSprite();
         this.loadInterceptorSprite();
         this.loadTankSprite();
         this.loadBoss1Sprite();
         this.loadBoss2Sprite();
+        this.loadBoss3Sprite();
+        this.loadBoss4Sprite();
+        this.loadBoss5Sprite();
+        this.loadBoss6Sprite();
+        this.loadBoss4Overlay();
         requestAnimationFrame(t => this.loop(t));
     }
 
@@ -1070,6 +1211,85 @@ class Game {
             this.sprites.playerBullet = scaled;
         };
         img.onerror = (e) => console.error('Failed to load player bullet sprite', e);
+    }
+
+    loadEnemyBulletSprite() {
+        const img = new Image();
+        img.src = 'assets/enemy shoot.png';
+        img.onload = () => {
+            const targetWidth = 36;
+            const targetHeight = 16;
+            const scaled = document.createElement('canvas');
+            scaled.width = targetWidth;
+            scaled.height = targetHeight;
+            const ctx = scaled.getContext('2d');
+            const scale = Math.min(targetWidth / img.width, targetHeight / img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (targetWidth - w) / 2, (targetHeight - h) / 2, w, h);
+            this.sprites.enemyBullet = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load enemy bullet sprite', e);
+    }
+
+    loadWeaponUpgradeSprite() {
+        const img = new Image();
+        img.src = 'assets/upgrade weapon.png';
+        img.onload = () => {
+            const size = 40;
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = Math.min(size / img.width, size / img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.weaponUpgrade = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load weapon upgrade sprite', e);
+    }
+
+    loadHealSprite() {
+        const img = new Image();
+        img.src = 'assets/heal.png';
+        img.onload = () => {
+            const size = 40;
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = Math.min(size / img.width, size / img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.heal = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load heal sprite', e);
+    }
+
+    loadAsteroidSprites() {
+        const files = [
+            'assets/aste1-removebg-preview.png',
+            'assets/aste2-removebg-preview.png',
+            'assets/aste3-removebg-preview.png',
+            'assets/aste4-removebg-preview.png',
+            'assets/aste5-removebg-preview.png',
+            'assets/aste6-removebg-preview.png'
+        ];
+        this.sprites.asteroids = new Array(files.length).fill(null);
+        files.forEach((src, idx) => {
+            const img = new Image();
+            img.src = src;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                this.sprites.asteroids[idx] = canvas;
+            };
+            img.onerror = (e) => console.error('Failed to load asteroid sprite', src, e);
+        });
     }
 
     loadScoutSprite() {
@@ -1180,6 +1400,96 @@ class Game {
         img.onerror = (e) => console.error('Failed to load boss sprite', e);
     }
 
+    loadBoss3Sprite() {
+        const img = new Image();
+        img.src = 'assets/boss 3.png';
+        img.onload = () => {
+            const size = 150; // Boss hitbox 100, allow larger silhouette
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.boss3 = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load boss sprite', e);
+    }
+
+    loadBoss4Sprite() {
+        const img = new Image();
+        img.src = 'assets/boss 4.png';
+        img.onload = () => {
+            const size = 150; // Boss hitbox 100, allow larger silhouette
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.boss4 = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load boss sprite', e);
+    }
+
+    loadBoss5Sprite() {
+        const img = new Image();
+        img.src = 'assets/boss 5.png';
+        img.onload = () => {
+            const size = 150; // Boss hitbox 100, allow larger silhouette
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.boss5 = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load boss sprite', e);
+    }
+
+    loadBoss6Sprite() {
+        const img = new Image();
+        img.src = 'assets/boss 6.png';
+        img.onload = () => {
+            const size = 150; // Boss hitbox 100, allow larger silhouette
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.boss6 = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load boss sprite', e);
+    }
+
+    loadBoss4Overlay() {
+        const img = new Image();
+        img.src = 'assets/boss4_overlay.png';
+        img.onload = () => {
+            const size = 160; // overlay covers boss silhouette
+            const scaled = document.createElement('canvas');
+            scaled.width = size;
+            scaled.height = size;
+            const ctx = scaled.getContext('2d');
+            const scale = size / Math.max(img.width, img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+            this.sprites.boss4Overlay = scaled;
+        };
+        img.onerror = (e) => console.error('Failed to load boss overlay sprite', e);
+    }
+
     start() {
         if (this.isRunning) return;
         this.isRunning = true;
@@ -1209,6 +1519,8 @@ class Game {
         this.player.y = this.height / 2;
         this.player.lastShoot = 0;
         this.spawnTimer = 0;
+        this.playerHitCounter = 0;
+        this.playerHitCooldown = 0;
         const config = LEVEL_CONFIG[this.levelIndex];
         this.enemySpeedScale = config.enemySpeedScale || 1;
         this.enemyFireScale = config.enemyFireScale || 1;
@@ -1218,10 +1530,8 @@ class Game {
         if (this.ui.bossBar) this.ui.bossBar.classList.add('hidden');
         // Reset drop counters and limits per level
         this.dropCounts = { weapon: 0, heal: 0 };
-        const levelNum = this.levelIndex + 1;
-        const weaponMaxMap = { 2: 1, 4: 2, 6: 3, 8: 3, 10: 4 };
-        this.dropLimits.weapon = weaponMaxMap[levelNum] || 0;
-        this.dropLimits.heal = levelNum === 10 ? 8 : 3;
+        this.dropLimits.weapon = 3;
+        this.dropLimits.heal = 3;
 
         // Show overlay
         this.sound.playMusic('level');
@@ -1240,7 +1550,17 @@ class Game {
         requestAnimationFrame(t => this.loop(t));
     }
 
+    applyPlayerHit(damage) {
+        if (this.playerHitCooldown > 0) return;
+        this.player.hp -= damage;
+        this.playerHitCounter += 1;
+        if (this.playerHitCounter % this.hitsPerWeaponDowngrade === 0) this.player.downgradeWeapon();
+        this.playerHitCooldown = 0.25; // short grace period to avoid multiple hits in the same moment
+        if (this.player.hp <= 0) this.gameOver();
+    }
+
     update(dt) {
+        this.playerHitCooldown = Math.max(0, this.playerHitCooldown - dt);
         this.player.update(dt, this.input);
         const config = LEVEL_CONFIG[this.levelIndex];
 
@@ -1256,6 +1576,7 @@ class Game {
             const boss = new Boss(this.width + 100, this.height / 2, config.boss);
             // Scale Boss HP by level
             boss.maxHp += this.levelIndex * 200;
+            if (this.levelIndex >= 4) boss.maxHp = Math.round(boss.maxHp * 1.1); // 10% bump from level 5 onward
             boss.hp = boss.maxHp;
             this.enemies.push(boss);
 
@@ -1278,6 +1599,21 @@ class Game {
 
                 if (type === 20) {
                     this.enemies.push(new Asteroid(this.width + 50, y));
+                } else if (type === 13) {
+                    const count = 5;
+                    const spacing = 48;
+                    const startY = Math.min(Math.max(40, y - ((count - 1) * spacing) / 2), this.height - 40 - (count - 1) * spacing);
+                    for (let i = 0; i < count; i++) {
+                        const rowY = startY + i * spacing;
+                        this.enemies.push(new Enemy(this.width + 50 + i * 12, rowY, type, this.enemySpeedScale, this.enemyFireScale));
+                    }
+                } else if (type === 14) {
+                    const mid = this.height / 2;
+                    const offset = 60;
+                    const y1 = Math.min(Math.max(50, mid - offset), this.height - 50);
+                    const y2 = Math.min(Math.max(50, mid + offset), this.height - 50);
+                    this.enemies.push(new Enemy(this.width + 50, y1, type, this.enemySpeedScale, this.enemyFireScale));
+                    this.enemies.push(new Enemy(this.width + 70, y2, type, this.enemySpeedScale, this.enemyFireScale));
                 } else {
                     this.enemies.push(new Enemy(this.width + 50, y, type, this.enemySpeedScale, this.enemyFireScale));
                 }
@@ -1371,10 +1707,8 @@ class Game {
             const dist = Math.hypot(b.x - this.player.x, b.y - this.player.y);
             if (dist < (this.player.width / 2 + 4)) {
                 b.active = false;
-                this.player.hp -= 10;
-                this.player.downgradeWeapon();
+                this.applyPlayerHit(10);
                 this.sound.playExplosion();
-                if (this.player.hp <= 0) this.gameOver();
             }
         });
 
@@ -1385,16 +1719,14 @@ class Game {
             if (dist < (e.width / 2 + 16)) {
                 if (e.type === 20) { // Asteroid
                     e.active = false;
-                    this.player.hp -= 30;
+                    this.applyPlayerHit(30);
                 } else if (e.type === 99) { // Boss
-                    this.player.hp -= 1;
+                    this.applyPlayerHit(1);
                 } else {
                     e.active = false;
-                    this.player.hp -= 20;
+                    this.applyPlayerHit(20);
                 }
-                this.player.downgradeWeapon();
                 this.sound.playExplosion();
-                if (this.player.hp <= 0) this.gameOver();
             }
         });
 

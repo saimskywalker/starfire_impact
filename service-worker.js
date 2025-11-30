@@ -1,4 +1,4 @@
-const CACHE_NAME = 'starfire-v14';
+const CACHE_NAME = 'starfire-v18';
 const ASSETS = [
     './',
     './index.html',
@@ -12,7 +12,21 @@ const ASSETS = [
     './assets/tank.png',
     './assets/player bullet.png',
     './assets/boss 1.png',
-    './assets/boss 2.png'
+    './assets/boss 2.png',
+    './assets/boss 3.png',
+    './assets/boss 4.png',
+    './assets/boss 5.png',
+    './assets/boss 6.png',
+    './assets/boss4_overlay.png',
+    './assets/enemy shoot.png',
+    './assets/upgrade weapon.png',
+    './assets/heal.png',
+    './assets/aste1-removebg-preview.png',
+    './assets/aste2-removebg-preview.png',
+    './assets/aste3-removebg-preview.png',
+    './assets/aste4-removebg-preview.png',
+    './assets/aste5-removebg-preview.png',
+    './assets/aste6-removebg-preview.png'
 ];
 
 self.addEventListener('install', event => {
